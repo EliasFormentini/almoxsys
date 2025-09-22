@@ -1,11 +1,16 @@
+const sequelize = require("../config/database");
+const { DataTypes } = require("sequelize");
+
+
+// importa os models e injeta a instância do sequelize
 const Usuario = require("./usuario")(sequelize);
 const Unidade = require("./unidade")(sequelize);
 const Categoria = require("./categoria")(sequelize);
 const Produto = require("./produto")(sequelize);
-const Pedido = require("./pedidos")(sequelize);
-const ItemPedido = require("./item_pedido")(sequelize);
-const Movimentacao = require("./movimentacoes")(sequelize);
-const Fornecedor = require("./fornecedores")(sequelize);
+const Pedido = require("./pedido")(sequelize);
+const ItemPedido = require("./ItemPedido")(sequelize);
+const Movimentacao = require("./movimentacao")(sequelize);
+const Fornecedor = require("./fornecedor")(sequelize);
 
 // ========================
 // ASSOCIAÇÕES
@@ -46,7 +51,9 @@ Pedido.hasMany(Movimentacao, { foreignKey: "id_pedido", as: "movimentacoes" });
 Movimentacao.belongsTo(Fornecedor, { foreignKey: "id_fornecedor", as: "fornecedor" });
 Fornecedor.hasMany(Movimentacao, { foreignKey: "id_fornecedor", as: "movimentacoes" });
 
+// Exporta models + conexão
 module.exports = {
+  sequelize,
   Usuario,
   Unidade,
   Categoria,
@@ -54,5 +61,5 @@ module.exports = {
   Pedido,
   ItemPedido,
   Movimentacao,
-  Fornecedor
-};
+  Fornecedor,
+}
