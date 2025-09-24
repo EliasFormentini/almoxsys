@@ -7,7 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rotas
 app.use("/api", routes);
+
+app.use((req, res) => {
+  res.status(404).json({ error: "Rota não encontrada" });
+});
 
 module.exports = app;

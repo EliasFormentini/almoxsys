@@ -1,20 +1,25 @@
 const { Router } = require("express");
+
+// const authRoutes = require("./authRoutes");
 const usuarioRoutes = require("./usuarioRoutes");
 const produtoRoutes = require("./produtoRoutes");
 const pedidoRoutes = require("./pedidoRoutes");
+const categoriaRoutes = require("./categoriaRoutes");
+const unidadeRoutes = require("./unidadeRoutes");
 const movimentacaoRoutes = require("./movimentacaoRoutes");
-const relatorioRoutes = require("./relatorioRoutes");
+const fornecedorRoutes = require("./fornecedorRoutes");
 
 const router = Router();
 
-router.get("/", (req, res) => {
-  res.json({ message: "API do Almoxarifado funcionando 🚀" });
-});
 
+// Agrupamento de rotas
+// router.use("/auth", authRoutes);
 router.use("/usuarios", usuarioRoutes);
 router.use("/produtos", produtoRoutes);
 router.use("/pedidos", pedidoRoutes);
+router.use("/categorias", categoriaRoutes);
+router.use("/unidades", unidadeRoutes);
 router.use("/movimentacoes", movimentacaoRoutes);
-router.use("/relatorios", relatorioRoutes);
+router.use("/fornecedores", fornecedorRoutes);
 
 module.exports = router;
