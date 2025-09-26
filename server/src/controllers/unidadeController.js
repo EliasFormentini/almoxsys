@@ -25,11 +25,11 @@ module.exports = {
 
   async criar(req, res) {
     try {
-      const { nome, sigla } = req.body;
-      if (!nome || !sigla) {
+      const { descricao, sigla } = req.body;
+      if (!descricao || !sigla) {
         return res.status(400).json({ error: "Os campos nome e sigla são obrigatórios" });
       }
-      const novaUnidade = await Unidade.create({ nome, sigla });
+      const novaUnidade = await Unidade.create({ descricao, sigla });
       res.status(201).json(novaUnidade);
     } catch (error) {
       res.status(500).json({ error: "Erro ao criar unidade", details: error.message });
@@ -39,14 +39,14 @@ module.exports = {
   async atualizar(req, res) {
     try {
       const { id } = req.params;
-      const { nome, sigla } = req.body;
+      const { descricao, sigla } = req.body;
 
       const unidade = await Unidade.findByPk(id);
       if (!unidade) {
         return res.status(404).json({ error: "Unidade não encontrada" });
       }
 
-      unidade.nome = nome || unidade.nome;
+      unidade.descricao = descricao || unidade.descricao;
       unidade.sigla = sigla || unidade.sigla;
       await unidade.save();
 
