@@ -6,7 +6,7 @@ module.exports = (sequelize) => {
     sigla: { type: DataTypes.STRING(10), allowNull: false },
     descricao: { type: DataTypes.STRING(50), allowNull: true },
   }, {
-    tableName: "Unidades",
+    tableName: "unidades",
     timestamps: false,
   });
 };

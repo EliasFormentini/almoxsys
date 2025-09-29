@@ -1,11 +1,31 @@
 import api from "./api";
 
-const unidadeService = {
-  listar: () => api.get("/unidades"),
-  buscarPorId: (id) => api.get(`/unidades/${id}`),
-  criar: (dados) => api.post("/unidades", dados),
-  atualizar: (id, dados) => api.put(`/unidades/${id}`, dados),
-  excluir: (id) => api.delete(`/unidades/${id}`),
+// Listar todas as unidades
+export const listarUnidades = async () => {
+  const response = await api.get("/unidades");
+  return response.data;
 };
 
-export default unidadeService;
+// Buscar uma unidade por ID
+export const buscarUnidade = async (id) => {
+  const response = await api.get(`/unidades/${id}`);
+  return response.data;
+};
+
+// Criar uma nova unidade
+export const salvarUnidade = async (unidade) => {
+  const response = await api.post("/unidades", unidade);
+  return response.data;
+};
+
+// Atualizar unidade existente
+export const atualizarUnidade = async (id, unidade) => {
+  const response = await api.put(`/unidades/${id}`, unidade);
+  return response.data;
+};
+
+// Deletar unidade
+export const deletarUnidade = async (id) => {
+  const response = await api.delete(`/unidades/${id}`);
+  return response.data;
+};
