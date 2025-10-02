@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { salvarUnidade } from "../services/unidadeService"; // ajuste o import conforme sua estrutura
+import { salvarUnidade, atualizarUnidade } from "../services/unidadeService";
 
 const UnidadeForm = ({ onSubmit, unidade, cancelarEdicao }) => {
   const [sigla, setSigla] = useState("");
@@ -7,25 +7,30 @@ const UnidadeForm = ({ onSubmit, unidade, cancelarEdicao }) => {
 
   useEffect(() => {
     if (unidade) {
-      setSigla(unidade.sigla || "");
-      setDescricao(unidade.descricao || "");
+      setSigla(unidade.sigla);
+      setDescricao(unidade.descricao);
     } else {
       setSigla("");
       setDescricao("");
     }
   }, [unidade]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const novaUnidade = { sigla, descricao };
-      await salvarUnidade(novaUnidade);
-      alert("Unidade salva com sucesso!");
-      if (onSubmit) onSubmit(novaUnidade);
+      if (unidade) {
+        await atualizarUnidade(unidade.id, { sigla, descricao });
+        alert("Unidade atualizada com sucesso!");
+      } else {
+        await salvarUnidade({ sigla, descricao });
+        alert("Unidade salva com sucesso!");
+      }
+      if (onSubmit) onSubmit(); // recarregar lista
       setSigla("");
       setDescricao("");
     } catch (err) {
       console.error("Erro ao salvar unidade:", err);
+      alert("Erro ao salvar unidade");
     }
   };
 

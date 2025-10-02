@@ -1,44 +1,40 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { salvarCategoria } from "../services/categoriaService";
 
-const CategoriaForm = ({ onSubmit, categoria, cancelarEdicao }) => {
+const CategoriaForm = ({ onSubmit, cancelarEdicao }) => {
   const [nome, setNome] = useState("");
 
-  useEffect(() => {
-    if (categoria) {
-      setNome(categoria.nome);
-    } else {
-      setNome("");
-    }
-  }, [categoria]);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nome.trim()) return;
-    onSubmit({ nome });
-    setNome("");
+    try {
+      await salvarCategoria({ nome });
+      onSubmit(); // chama callback passado pela modal
+    } catch (err) {
+      console.error("Erro ao salvar categoria:", err);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
+    <form onSubmit={handleSubmit}>
       <input
         type="text"
         placeholder="Nome da categoria"
         value={nome}
         onChange={(e) => setNome(e.target.value)}
-        style={{ padding: "8px", marginRight: "10px" }}
+        style={{ padding: "8px", width: "100%", marginBottom: "10px" }}
       />
-      <button type="submit" style={{ padding: "8px 12px" }}>
-        {categoria ? "Atualizar" : "Adicionar"}
-      </button>
-      {categoria && (
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button
           type="button"
           onClick={cancelarEdicao}
-          style={{ padding: "8px 12px", marginLeft: "10px" }}
+          style={{ marginRight: "10px" }}
         >
           Cancelar
         </button>
-      )}
+        <button type="submit" style={{ backgroundColor: "#5cb85c", color: "#fff", padding: "8px 12px", border: "none", borderRadius: "4px" }}>
+          Salvar
+        </button>
+      </div>
     </form>
   );
 };

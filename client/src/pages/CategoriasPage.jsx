@@ -1,63 +1,105 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import Modal from "react-modal";
 import CategoriaForm from "../components/CategoriaForm";
 import CategoriaList from "../components/CategoriaList";
+import { listarCategorias } from "../services/categoriaService";
+
+// Necessário para acessibilidade do react-modal
+Modal.setAppElement("#root");
 
 const CategoriasPage = () => {
   const [categorias, setCategorias] = useState([]);
-  const [editando, setEditando] = useState(null); // categoria em edição
+  const [filtro, setFiltro] = useState("");
+  const [modalAberta, setModalAberta] = useState(false);
 
-  // Carrega categorias ao montar
+  const carregarCategorias = async () => {
+    try {
+      const data = await listarCategorias();
+      setCategorias(data);
+    } catch (err) {
+      console.error("Erro ao carregar categorias:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchCategorias();
+    carregarCategorias();
   }, []);
 
-  const fetchCategorias = async () => {
-    try {
-      const res = await api.get("/categorias");
-      setCategorias(res.data);
-    } catch (err) {
-      console.error("Erro ao buscar categorias:", err);
-    }
-  };
-
-  const salvarCategoria = async (categoria) => {
-    try {
-      if (editando) {
-        await api.put(`/categorias/${editando.id}`, categoria);
-      } else {
-        await api.post("/categorias", categoria);
-      }
-      fetchCategorias();
-      setEditando(null);
-    } catch (err) {
-      console.error("Erro ao salvar categoria:", err);
-    }
-  };
-
-  const excluirCategoria = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir?")) return;
-    try {
-      await api.delete(`/categorias/${id}`);
-      fetchCategorias();
-    } catch (err) {
-      console.error("Erro ao excluir categoria:", err);
-    }
-  };
+  const categoriasFiltradas = categorias.filter((cat) => {
+    const termo = filtro.toLowerCase();
+    return (
+      String(cat.id).includes(termo) ||
+      cat.nome.toLowerCase().includes(termo)
+    );
+  });
 
   return (
-    <div>
+    <div style={{ padding: "20px" }}>
       <h2>Gestão de Categorias</h2>
-      <CategoriaForm
-        onSubmit={salvarCategoria}
-        categoria={editando}
-        cancelarEdicao={() => setEditando(null)}
-      />
-      <CategoriaList
-        categorias={categorias}
-        onEdit={setEditando}
-        onDelete={excluirCategoria}
-      />
+
+      {/* Campo de filtro */}
+      <div style={{ marginBottom: "15px" }}>
+        <input
+          type="text"
+          placeholder="Filtrar por código ou nome..."
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          style={{
+            padding: "8px",
+            width: "300px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+          }}
+        />
+      </div>
+
+      {/* Botão Novo */}
+      <div style={{ marginBottom: "15px" }}>
+        <button
+          onClick={() => setModalAberta(true)}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: "#d9534f",
+            color: "#fff",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          NOVO
+        </button>
+      </div>
+
+      {/* Lista */}
+      <CategoriaList categorias={categoriasFiltradas} />
+
+      {/* Modal */}
+      <Modal
+        isOpen={modalAberta}
+        onRequestClose={() => setModalAberta(false)}
+        contentLabel="Nova Categoria"
+        style={{
+          content: {
+            width: "400px",
+            margin: "auto",
+            padding: "20px",
+            borderRadius: "10px",
+            border: "1px solid #ccc",
+          },
+          overlay: {
+            backgroundColor: "rgba(0,0,0,0.5)",
+          },
+        }}
+      >
+        <h3>Nova Categoria</h3>
+        <CategoriaForm
+          onSubmit={() => {
+            carregarCategorias();
+            setModalAberta(false);
+          }}
+          cancelarEdicao={() => setModalAberta(false)}
+        />
+      </Modal>
     </div>
   );
 };
