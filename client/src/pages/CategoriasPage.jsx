@@ -1,23 +1,20 @@
-import { useEffect, useState } from "react";
-import Modal from "react-modal";
+import React, { useEffect, useState } from "react";
 import CategoriaForm from "../components/CategoriaForm";
 import CategoriaList from "../components/CategoriaList";
-import { listarCategorias } from "../services/categoriaService";
-
-// Necessário para acessibilidade do react-modal
-Modal.setAppElement("#root");
+import { listarCategorias, deletarCategoria } from "../services/categoriaService";
 
 const CategoriasPage = () => {
   const [categorias, setCategorias] = useState([]);
   const [filtro, setFiltro] = useState("");
-  const [modalAberta, setModalAberta] = useState(false);
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [categoriaEditando, setCategoriaEditando] = useState(null);
 
   const carregarCategorias = async () => {
     try {
       const data = await listarCategorias();
       setCategorias(data);
-    } catch (err) {
-      console.error("Erro ao carregar categorias:", err);
+    } catch (error) {
+      console.error("Erro ao listar categorias:", error);
     }
   };
 
@@ -25,83 +22,95 @@ const CategoriasPage = () => {
     carregarCategorias();
   }, []);
 
-  const categoriasFiltradas = categorias.filter((cat) => {
-    const termo = filtro.toLowerCase();
-    return (
-      String(cat.id).includes(termo) ||
-      cat.nome.toLowerCase().includes(termo)
-    );
-  });
+  const categoriasFiltradas = (() => {
+    const termo = filtro.toString().trim().toLowerCase();
+    if (!termo) return categorias;
+
+    return categorias.filter((cat) => {
+      const id = cat?.id ? String(cat.id) : "";
+      const nome = cat?.nome ? String(cat.nome).toLowerCase() : "";
+      const descricao = cat?.descricao ? String(cat.descricao).toLowerCase() : "";
+      return id.includes(termo) || nome.includes(termo) || descricao.includes(termo);
+    });
+  })();
+
+  const handleEditar = (categoria) => {
+    setCategoriaEditando(categoria);
+    setMostrarModal(true);
+  };
+
+  const handleNovo = () => {
+    setCategoriaEditando(null);
+    setMostrarModal(true);
+  };
+
+  const handleFecharModal = () => {
+    setMostrarModal(false);
+    setCategoriaEditando(null);
+  };
+
+  const handleAtualizarLista = () => {
+    carregarCategorias();
+    handleFecharModal();
+  };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Gestão de Categorias</h2>
+    <div className="container">
+      <h2>Categorias</h2>
 
-      {/* Campo de filtro */}
-      <div style={{ marginBottom: "15px" }}>
+      <div style={{ marginBottom: "10px" }}>
         <input
           type="text"
-          placeholder="Filtrar por código ou nome..."
+          placeholder="Filtrar por código ou descrição..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
-          style={{
-            padding: "8px",
-            width: "300px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
+          style={{ marginRight: "10px", padding: "5px" }}
         />
+        <button onClick={handleNovo}>Novo</button>
       </div>
 
-      {/* Botão Novo */}
-      <div style={{ marginBottom: "15px" }}>
-        <button
-          onClick={() => setModalAberta(true)}
-          style={{
-            padding: "8px 16px",
-            backgroundColor: "#d9534f",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          NOVO
-        </button>
-      </div>
+      <CategoriaList
+        categorias={categoriasFiltradas}
+        onEdit={handleEditar}
+        onAtualizar={handleAtualizarLista}
+        onDelete={deletarCategoria}
+      />
 
-      {/* Lista */}
-      <CategoriaList categorias={categoriasFiltradas} />
-
-      {/* Modal */}
-      <Modal
-        isOpen={modalAberta}
-        onRequestClose={() => setModalAberta(false)}
-        contentLabel="Nova Categoria"
-        style={{
-          content: {
-            width: "400px",
-            margin: "auto",
-            padding: "20px",
-            borderRadius: "10px",
-            border: "1px solid #ccc",
-          },
-          overlay: {
-            backgroundColor: "rgba(0,0,0,0.5)",
-          },
-        }}
-      >
-        <h3>Nova Categoria</h3>
-        <CategoriaForm
-          onSubmit={() => {
-            carregarCategorias();
-            setModalAberta(false);
-          }}
-          cancelarEdicao={() => setModalAberta(false)}
-        />
-      </Modal>
+      {mostrarModal && (
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <h3>{categoriaEditando ? "Editar Categoria" : "Nova Categoria"}</h3>
+            <CategoriaForm
+              categoria={categoriaEditando}
+              onCancel={handleFecharModal}
+              onSuccess={handleAtualizarLista}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
+};
+
+const modalOverlayStyle = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 1000,
+};
+
+const modalStyle = {
+  background: "#fff",
+  padding: "20px",
+  borderRadius: "8px",
+  width: "400px",
+  boxShadow: "0px 0px 10px rgba(0,0,0,0.3)",
 };
 
 export default CategoriasPage;

@@ -1,38 +1,53 @@
-import { useState } from "react";
-import { salvarCategoria } from "../services/categoriaService";
+import React, { useEffect, useState } from "react";
+import { criarCategoria, atualizarCategoria } from "../services/categoriaService";
 
-const CategoriaForm = ({ onSubmit, cancelarEdicao }) => {
+const CategoriaForm = ({ categoria, onCancel, onSuccess }) => {
   const [nome, setNome] = useState("");
+
+  useEffect(() => {
+    if (categoria) setNome(categoria.nome || "");
+  }, [categoria]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await salvarCategoria({ nome });
-      onSubmit(); // chama callback passado pela modal
-    } catch (err) {
-      console.error("Erro ao salvar categoria:", err);
+      if (categoria) {
+        await atualizarCategoria(categoria.id, { nome });
+      } else {
+        await criarCategoria({ nome });
+      }
+      onSuccess();
+    } catch (error) {
+      console.error("Erro ao salvar categoria:", error);
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        placeholder="Nome da categoria"
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
-        style={{ padding: "8px", width: "100%", marginBottom: "10px" }}
-      />
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ marginBottom: "10px" }}>
+        <label>Nome:</label>
+        <input
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          required
+          style={{ width: "100%", padding: "6px" }}
+        />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
         <button
           type="button"
-          onClick={cancelarEdicao}
-          style={{ marginRight: "10px" }}
+          onClick={onCancel}
+          style={{ backgroundColor: "#ccc", border: "none", padding: "6px 12px", borderRadius: "4px" }}
         >
           Cancelar
         </button>
-        <button type="submit" style={{ backgroundColor: "#5cb85c", color: "#fff", padding: "8px 12px", border: "none", borderRadius: "4px" }}>
-          Salvar
+        <button
+          type="submit"
+          style={{ backgroundColor: "#4CAF50", color: "white", border: "none", padding: "6px 12px", borderRadius: "4px" }}
+        >
+          {categoria ? "Atualizar" : "Salvar"}
         </button>
       </div>
     </form>

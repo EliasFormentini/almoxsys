@@ -1,49 +1,73 @@
+import { useState } from "react";
 import { deletarCategoria } from "../services/categoriaService";
 
-const CategoriaList = ({ categorias, onEditar, onAtualizar }) => {
+const CategoriaList = ({ categorias, onEdit, onAtualizar }) => {
+  const [carregando, setCarregando] = useState(false);
+
   const handleDelete = async (id) => {
-    if (window.confirm("Deseja excluir esta categoria?")) {
-      try {
-        await deletarCategoria(id);
-        alert("Categoria excluída com sucesso!");
-        if (onAtualizar) onAtualizar();
-      } catch (err) {
-        console.error("Erro ao excluir categoria:", err);
-        alert("Erro ao excluir categoria");
-      }
+    if (!window.confirm("Tem certeza que deseja excluir esta categoria?")) return;
+
+    try {
+      setCarregando(true);
+      await deletarCategoria(id);
+      alert("Categoria excluída com sucesso!");
+      onAtualizar(); // recarrega lista
+    } catch (err) {
+      console.error("Erro ao excluir categoria:", err.response?.data || err.message);
+      alert("Erro ao excluir categoria!");
+    } finally {
+      setCarregando(false);
     }
   };
 
+  if (!categorias.length) {
+    return <p>Nenhuma categoria encontrada.</p>;
+  }
+
   return (
-    <table border="1" cellPadding="8" style={{ borderCollapse: "collapse" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
       <thead>
-        <tr>
-          <th>Código</th>
-          <th>Nome</th>
-          <th>Ações</th>
+        <tr style={{ backgroundColor: "#f0f0f0" }}>
+          <th style={{ border: "1px solid #ccc", padding: "8px" }}>Código</th>
+          <th style={{ border: "1px solid #ccc", padding: "8px" }}>Descrição</th>
+          <th style={{ border: "1px solid #ccc", padding: "8px" }}>Ações</th>
         </tr>
       </thead>
       <tbody>
-        {categorias.length > 0 ? (
-          categorias.map((c) => (
-            <tr key={c.id}>
-              <td>{c.id}</td>
-              <td>{c.nome}</td>
-              <td>
-                <button onClick={() => onEditar(c)} style={{ marginRight: "5px" }}>
-                  Editar
-                </button>
-                <button onClick={() => handleDelete(c.id)}>Excluir</button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td colSpan="3" style={{ textAlign: "center" }}>
-              Nenhuma categoria encontrada
+        {categorias.map((categoria) => (
+          <tr key={categoria.id}>
+            <td style={{ border: "1px solid #ccc", padding: "8px" }}>{categoria.id}</td>
+            <td style={{ border: "1px solid #ccc", padding: "8px" }}>{categoria.nome}</td>
+            <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+              <button
+                onClick={() => onEdit(categoria)}
+                style={{
+                  marginRight: "8px",
+                  backgroundColor: "#007bff",
+                  color: "white",
+                  border: "none",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleDelete(categoria.id)}
+                style={{
+                  backgroundColor: "#dc3545",
+                  color: "white",
+                  border: "none",
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                }}
+                disabled={carregando}
+              >
+                {carregando ? "Excluindo..." : "Excluir"}
+              </button>
             </td>
           </tr>
-        )}
+        ))}
       </tbody>
     </table>
   );
