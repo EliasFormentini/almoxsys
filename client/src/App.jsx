@@ -1,23 +1,17 @@
-import { Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
 import CategoriasPage from "./pages/CategoriasPage";
-import ProdutosPage from "./pages/ProdutosPage";
 import UnidadesPage from "./pages/UnidadesPage";
 
-function App() {
+export default function App() {
   return (
-    <div style={{ display: "flex" }}>
-      <Sidebar />
-      <main style={{ flex: 1, padding: "20px" }}>
-        <Routes>
-          <Route path="/" element={<h1>Dashboard</h1>} />
-          <Route path="/categorias" element={<CategoriasPage />} />
-          <Route path="/produtos" element={<ProdutosPage />} />
-          <Route path="/unidades" element={<UnidadesPage />} />
-        </Routes>
-      </main>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route path="categorias" element={<CategoriasPage />} />
+          <Route path="unidades" element={<UnidadesPage />} />
+        </Route>
+      </Routes>
+    </Router>
   );
 }
-
-export default App;

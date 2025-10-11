@@ -1,85 +1,84 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
+/* ======= ESTILOS GERAIS ======= */
+html,
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  @apply bg-background text-text-primary font-sans antialiased;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* ======= SIDEBAR ======= */
+.sidebar {
+  @apply bg-sidebar text-white w-60 min-h-screen flex flex-col shadow-lg;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.sidebar a {
+  @apply flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-sidebar-hover hover:text-white transition-colors duration-200;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.sidebar .active {
+  @apply bg-sidebar-hover text-white;
 }
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* ======= HEADER ======= */
+.header {
+  @apply flex items-center justify-between bg-surface px-6 py-3 border-b border-border shadow-sm;
 }
 
-.modal {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+/* ======= CONTEÚDO PRINCIPAL ======= */
+.main-content {
+  @apply flex-1 bg-background p-6;
+}
+
+/* ======= CARDS ======= */
+.card {
+  @apply bg-surface rounded-xl p-4 shadow-card border border-border transition-all;
+}
+
+.card-red {
+  @apply bg-card-red text-white;
+}
+
+.card-yellow {
+  @apply bg-card-yellow text-black;
+}
+
+.card-green {
+  @apply bg-card-green text-white;
+}
+
+.card-purple {
+  @apply bg-card-purple text-white;
+}
+
+/* ======= BOTÕES ======= */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-secondary;
+}
+
+.btn-outline {
+  @apply border border-primary text-primary hover:bg-primary hover:text-white;
+}
+
+/* ======= TÍTULOS ======= */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold text-text-primary;
+}
+
+/* ======= TABELAS ======= */
+.table {
+  @apply w-full border-collapse;
+}
+
+.table th {
+  @apply bg-gray-100 text-left px-4 py-2 border-b border-border text-sm font-semibold;
+}
+
+.table td {
+  @apply px-4 py-2 border-b border-border text-sm;
 }
