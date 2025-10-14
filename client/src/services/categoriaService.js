@@ -1,23 +1,12 @@
 import axios from "axios";
 
-import api from "./api";
+const API_URL = "http://localhost:3000/api/categorias";
 
-export const listarCategorias = async () => {
-  const response = await api.get("/categorias");
-  return response.data;
-};
+export const listar = () => axios.get(API_URL);
 
-export const criarCategoria = async (dados) => {
-  const response = await api.post("/categorias", dados);
-  return response.data;
-};
+export const criar = (categoria) => axios.post(API_URL, categoria);
 
-export const atualizarCategoria = async (id, dados) => {
-  const response = await api.put(`/categorias/${id}`, dados);
-  return response.data;
-};
+export const atualizar = (id, categoria) =>
+  axios.put(`${API_URL}/${id}`, categoria);
 
-export const deletarCategoria = async (id) => {
-  const response = await api.delete(`/categorias/${id}`);
-  return response.data;
-};
+export const deletar = (id) => axios.delete(`${API_URL}/${id}`);
