@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import * as categoriaService from "../services/categoriaService";
 import CategoriaModal from "../components/CategoriaModal";
+import { Pencil, Trash2 } from "lucide-react";
+
 
 const CategoriasPage = () => {
   const [categorias, setCategorias] = useState([]);
@@ -34,27 +36,27 @@ const CategoriasPage = () => {
   const handleExcluir = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir esta categoria?")) return;
     try {
-      await categoriaService.excluir(id);
+      await categoriaService.deletar(id);
       carregarCategorias();
     } catch (error) {
       console.error("Erro ao excluir categoria:", error);
     }
   };
 
-  const handleSalvar = async (categoria) => {
-    try {
-      if (categoriaSelecionada) {
-        await categoriaService.atualizar(categoriaSelecionada.id, { nome: categoria.nome });
-      } else {
-        await categoriaService.criar({ nome: categoria.nome });
-      }
-      carregarCategorias();
-      setShowModal(false);
-      setCategoriaSelecionada(null);
-    } catch (error) {
-      console.error("Erro ao salvar categoria:", error);
+  const handleSalvar = async (data) => {
+  try {
+    if (data.id) {
+      await categoriaService.atualizar(data.id, { nome: data.nome });
+    } else {
+      await categoriaService.criar({ nome: data.nome });
     }
-  };
+    await carregarCategorias();
+    setIsModalOpen(false);
+  } catch (err) {
+    console.error("Erro ao salvar categoria:", err);
+    alert("Erro ao salvar categoria");
+  }
+};
 
   const categoriasFiltradas = categorias.filter((c) =>
     c.nome.toLowerCase().includes(termoBusca.toLowerCase())
@@ -67,15 +69,15 @@ const CategoriasPage = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Categorias</h1>
         <button
           onClick={handleNova}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+          className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
         >
           Novo
         </button>
       </div>
 
       {/* Filtro */}
-      <div className="mb-4">
-        <input
+      <div className="mb-4"> 
+        <input 
 
           type="text"
           placeholder="Filtrar por descrição..."
@@ -107,15 +109,17 @@ const CategoriasPage = () => {
                   <td className="px-4 py-2 border-b text-center space-x-2">
                     <button
                       onClick={() => handleEditar(categoria)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                      className="bg-blue-800 hover:bg-blue-900 text-white px-3 py-1 rounded text-sm"
+                      title="Editar"
                     >
-                      Editar
+                      <Pencil size={16} />
                     </button>
                     <button
                       onClick={() => handleExcluir(categoria.id)}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                      title="Excluir"
                     >
-                      Excluir
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
