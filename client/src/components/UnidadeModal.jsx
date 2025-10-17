@@ -1,32 +1,31 @@
 import React, { useEffect, useState } from "react";
 
-
-const CategoriaModal = ({ isOpen, onClose, onSave, categoriaSelecionada }) => {
-  const [nome, setNome] = useState("");
+const UnidadeModal = ({ isOpen, onClose, onSave, unidadeSelecionada }) => {
+  const [sigla, setSigla] = useState("");
+  const [descricao, setDescricao] = useState("");
 
   useEffect(() => {
-    if (categoriaSelecionada && categoriaSelecionada.nome != null) {
-      setNome(categoriaSelecionada.nome);
+    if (unidadeSelecionada) {
+      setSigla(unidadeSelecionada.sigla || "");
+      setDescricao(unidadeSelecionada.descricao || "");
     } else {
-      setNome("");
+      setSigla("");
+      setDescricao("");
     }
-  }, [categoriaSelecionada, isOpen]);
-
-  const handleChange = (e) => {
-    setNome(e.target.value);
-  };
+  }, [unidadeSelecionada, isOpen]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    const trimmed = (nome || "").trim();
-    if (!trimmed) {
-      return alert("Informe o nome da categoria.");
+    const s = (sigla || "").trim();
+    const d = (descricao || "").trim();
+    if (!s || !d) {
+      alert("Informe a sigla e a descrição da unidade.");
+      return;
     }
-
     onSave({
-      id: categoriaSelecionada ? categoriaSelecionada.id : null,
-      nome: trimmed,
+      id: unidadeSelecionada ? unidadeSelecionada.id : null,
+      sigla: s,
+      descricao: d,
     });
   };
 
@@ -38,7 +37,7 @@ const CategoriaModal = ({ isOpen, onClose, onSave, categoriaSelecionada }) => {
         {/* Cabeçalho */}
         <div className="bg-blue-800 text-white px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg text-white font-semibold">
-            {categoriaSelecionada ? "Editar Categoria" : "Nova Categoria"}
+            {unidadeSelecionada ? "Editar Unidade" : "Nova Unidade"}
           </h2>
           <button
             onClick={onClose}
@@ -50,20 +49,32 @@ const CategoriaModal = ({ isOpen, onClose, onSave, categoriaSelecionada }) => {
           </button>
         </div>
 
-        {/* Form */}
+        {/* Formulário */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome
+              Sigla
             </label>
             <input
               type="text"
-              name="nome"
-              value={nome}
-              onChange={handleChange}
+              value={sigla}
+              onChange={(e) => setSigla(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Digite o nome da categoria"
+              placeholder="Digite a sigla da unidade"
               autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Descrição
+            </label>
+            <input
+              type="text"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Digite a descrição da unidade"
             />
           </div>
 
@@ -79,7 +90,7 @@ const CategoriaModal = ({ isOpen, onClose, onSave, categoriaSelecionada }) => {
               type="submit"
               className="px-4 py-2 bg-blue-800 text-white rounded hover:bg-blue-700"
             >
-              {categoriaSelecionada ? "Salvar Alterações" : "Criar Categoria"}
+              {unidadeSelecionada ? "Salvar Alterações" : "Criar Unidade"}
             </button>
           </div>
         </form>
@@ -88,4 +99,4 @@ const CategoriaModal = ({ isOpen, onClose, onSave, categoriaSelecionada }) => {
   );
 };
 
-export default CategoriaModal;
+export default UnidadeModal;
