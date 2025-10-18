@@ -15,4 +15,8 @@ router.post("/", movimentacaoController.create);
 // Buscar movimentação por ID
 router.get("/:id", movimentacaoController.getById);
 
+router.post("/entradas", movimentacaoController.createEntrada);
+
+
 module.exports = router;
+
