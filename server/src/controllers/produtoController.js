@@ -6,8 +6,8 @@ const produtoController = {
     try {
       const produtos = await Produto.findAll({
         include: [
-          { model: Categoria, attributes: ["id", "nome"] },
-          { model: Unidade, attributes: ["id", "sigla", "descricao"] },
+          { model: Categoria, as: "categoria", attributes: ["id", "nome"] },
+          { model: Unidade, as: "unidade", attributes: ["id", "sigla", "descricao"] },
         ],
       });
       res.json(produtos);
@@ -23,9 +23,10 @@ const produtoController = {
       const { id } = req.params;
       const produto = await Produto.findByPk(id, {
         include: [
-          { model: Categoria, attributes: ["id", "nome"] },
-          { model: Unidade, attributes: ["id", "sigla", "descricao"] },
+          { model: Categoria, as: "categoria", attributes: ["id", "nome"] },
+          { model: Unidade, as: "unidade", attributes: ["id", "sigla", "descricao"] },
         ],
+
       });
       if (!produto) return res.status(404).json({ error: "Produto não encontrado" });
       res.json(produto);

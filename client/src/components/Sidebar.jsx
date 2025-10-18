@@ -1,48 +1,3 @@
-// import { Link } from "react-router-dom";
-
-// const Sidebar = () => {
-//   return (
-//     <aside
-//       style={{
-//         width: "200px",
-//         height: "100vh",
-//         background: "#222",
-//         color: "#fff",
-//         padding: "20px",
-//       }}
-//     >
-//       <h2>AlmoxSys</h2>
-//       <nav>
-//         <ul style={{ listStyle: "none", padding: 0 }}>
-//           <li>
-//             <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>
-//               Dashboard
-//             </Link>
-//           </li>
-//           <li>
-//             <Link to="/categorias" style={{ color: "#fff", textDecoration: "none" }}>
-//               Categorias
-//             </Link>
-//           </li>
-//           <li>
-//             <Link to="/produtos" style={{ color: "#fff", textDecoration: "none" }}>
-//               Produtos
-//             </Link>
-//           </li>
-//           <li>
-//             <Link to="/unidades" style={{ color: "#fff", textDecoration: "none" }}>
-//               Unidades
-//             </Link>
-//           </li>
-//         </ul>
-//       </nav>
-//     </aside>
-//   );
-// };
-
-// export default Sidebar;
-
-
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
@@ -54,6 +9,7 @@ import {
   FaUsers,
   FaChevronDown,
   FaChevronUp,
+  FaBoxOpen
 } from "react-icons/fa";
 
 const Sidebar = ({ isOpen }) => {
@@ -110,6 +66,16 @@ const Sidebar = ({ isOpen }) => {
                 }
               >
                 <FaRuler className="mr-2" /> Unidades de Medida
+              </NavLink>
+              <NavLink
+                to="/produtos"
+                className={({ isActive }) =>
+                  `${linkBaseClass} text-sm ${
+                    isActive ? activeClass : "text-gray-400"
+                  }`
+                }
+              >
+                <FaBoxOpen className="mr-2" /> Produtos
               </NavLink>
             </div>
           )}
