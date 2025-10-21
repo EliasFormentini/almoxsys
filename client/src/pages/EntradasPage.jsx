@@ -1,48 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { listarEntradas, criarEntrada } from "../services/movimentacaoService";
-import EntradaModal from "../components/EntradaModal";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { listarEntradas } from "../services/movimentacaoService";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import EntradaModal from "../components/EntradaModal"; // ✅ importar o modal
 
 const EntradasPage = () => {
   const [entradas, setEntradas] = useState([]);
-  const [expandida, setExpandida] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+  const [mostrarModal, setMostrarModal] = useState(false); // ✅ controla exibição do modal
 
   const carregarEntradas = async () => {
     try {
-      const res = await listarEntradas();
-      const agrupadas = agruparPorNota(res.data);
-      setEntradas(agrupadas);
-    } catch (err) {
-      console.error("Erro ao carregar entradas:", err);
-    }
-  };
-
-  const agruparPorNota = (dados) => {
-    const grupos = {};
-    dados.forEach((mov) => {
-      const chave = `${mov.numero_nota}-${mov.serie_nota}`;
-      if (!grupos[chave])
-        grupos[chave] = {
-          numero_nota: mov.numero_nota,
-          serie_nota: mov.serie_nota,
-          fornecedor: mov.Fornecedor?.nome || "—",
-          data_movimentacao: mov.data_movimentacao,
-          produtos: [],
-        };
-      grupos[chave].produtos.push(mov);
-    });
-    return Object.values(grupos);
-  };
-
-  const handleSalvar = async (entrada) => {
-    try {
-      await criarEntrada(entrada);
-      await carregarEntradas();
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error("Erro ao salvar entrada:", err);
-      alert("Erro ao salvar entrada.");
+      const response = await listarEntradas();
+      if (response?.data) {
+        setEntradas(response.data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar entradas:", error);
     }
   };
 
@@ -50,89 +23,152 @@ const EntradasPage = () => {
     carregarEntradas();
   }, []);
 
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6 border-b pb-2">
         <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md shadow-sm"
+          className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+          onClick={() => setMostrarModal(true)} // ✅ abre modal
         >
           Nova Entrada
         </button>
       </div>
 
-      <table className="w-full border bg-white shadow-sm">
-        <thead className="bg-gray-100 text-gray-700 text-sm">
-          <tr>
-            <th className="p-2 border">Nº Nota</th>
-            <th className="p-2 border">Série</th>
-            <th className="p-2 border">Fornecedor</th>
-            <th className="p-2 border">Data</th>
-            <th className="p-2 border text-center">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entradas.map((e, i) => (
-            <React.Fragment key={i}>
-              <tr
-                className="hover:bg-gray-50 cursor-pointer"
-                onClick={() =>
-                  setExpandida(expandida === i ? null : i)
-                }
-              >
-                <td className="p-2 border text-center">{e.numero_nota}</td>
-                <td className="p-2 border text-center">{e.serie_nota}</td>
-                <td className="p-2 border">{e.fornecedor}</td>
-                <td className="p-2 border text-center">
-                  {new Date(e.data_movimentacao).toLocaleDateString()}
-                </td>
-                <td className="p-2 border text-center">
-                  {expandida === i ? <ChevronUp /> : <ChevronDown />}
+      {/* ✅ Modal de nova entrada */}
+      {mostrarModal && (
+        <EntradaModal
+          onClose={() => setMostrarModal(false)}
+          onSave={() => {
+            setMostrarModal(false);
+            carregarEntradas();
+          }}
+        />
+      )}
+
+      {/* Tabela de entradas */}
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <table className="min-w-full border border-gray-200">
+          <thead className="bg-gray-100 text-gray-700 text-sm">
+            <tr>
+              <th className="px-4 py-3 border-b text-left">Nº Nota</th>
+              <th className="px-4 py-3 border-b text-left">Série</th>
+              <th className="px-4 py-3 border-b text-left">Fornecedor</th>
+              <th className="px-4 py-3 border-b text-left">Data</th>
+              <th className="px-4 py-3 border-b text-right">Valor Total</th>
+              <th className="px-4 py-3 border-b text-center w-16">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entradas.length > 0 ? (
+              entradas.map((entrada) => {
+                const valorTotal = entrada.itens?.reduce(
+                  (acc, item) => acc + Number(item.valor_total || 0),
+                  0
+                );
+
+                return (
+                  <React.Fragment key={entrada.id}>
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-2 border-b">{entrada.numero_nota}</td>
+                      <td className="px-4 py-2 border-b">{entrada.serie_nota}</td>
+                      <td className="px-4 py-2 border-b">
+                        {entrada.fornecedor?.nome || "—"}
+                      </td>
+                      <td className="px-4 py-2 border-b">
+                        {new Date(entrada.data_movimentacao).toLocaleDateString("pt-BR")}
+                      </td>
+                      <td className="px-4 py-2 border-b text-right font-semibold">
+                        {valorTotal
+                          ? valorTotal.toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })
+                          : "R$ 0,00"}
+                      </td>
+                      <td className="px-4 py-2 border-b text-center">
+                        <button
+                          onClick={() => toggleExpand(entrada.id)}
+                          className="text-gray-600 hover:text-gray-800"
+                        >
+                          {expandedId === entrada.id ? <FaChevronUp /> : <FaChevronDown />}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {expandedId === entrada.id && (
+                      <tr className="bg-gray-50">
+                        <td colSpan="6" className="p-0">
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-100">
+                              <tr>
+                                <th className="px-4 py-2 text-left">Produto</th>
+                                <th className="px-4 py-2 text-center">Qtd</th>
+                                <th className="px-4 py-2 text-right">Vlr Unit</th>
+                                <th className="px-4 py-2 text-right">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {entrada.itens?.length > 0 ? (
+                                entrada.itens.map((item, index) => (
+                                  <tr key={index} className="border-t">
+                                    <td className="px-4 py-2 border-b">
+                                      {item.produto?.nome || "—"}
+                                    </td>
+                                    <td className="px-4 py-2 border-b text-center">
+                                      {item.quantidade}
+                                    </td>
+                                    <td className="px-4 py-2 border-b text-right">
+                                      {Number(item.valor_unitario || 0).toLocaleString("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL",
+                                      })}
+                                    </td>
+                                    <td className="px-4 py-2 border-b text-right text-blue-700 font-medium">
+                                      {Number(item.valor_total || 0).toLocaleString("pt-BR", {
+                                        style: "currency",
+                                        currency: "BRL",
+                                      })}
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td
+                                    colSpan="4"
+                                    className="text-center text-gray-500 italic py-2"
+                                  >
+                                    Nenhum produto vinculado.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
+            ) : (
+              <tr>
+                <td
+                  colSpan="6"
+                  className="px-4 py-4 text-center text-gray-500 italic"
+                >
+                  Nenhuma entrada encontrada.
                 </td>
               </tr>
-
-              {expandida === i && (
-                <tr>
-                  <td colSpan="5" className="p-0 bg-gray-50">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-200">
-                        <tr>
-                          <th className="p-2 border">Produto</th>
-                          <th className="p-2 border text-center">Qtd</th>
-                          <th className="p-2 border text-center">Vlr Unit</th>
-                          <th className="p-2 border text-center">Total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {e.produtos.map((p) => (
-                          <tr key={p.id}>
-                            <td className="p-2 border">{p.Produto?.nome}</td>
-                            <td className="p-2 border text-center">{p.quantidade}</td>
-                            <td className="p-2 border text-center">{p.valor_unitario}</td>
-                            <td className="p-2 border text-center font-semibold text-blue-700">
-                              {p.valor_total}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
-
-      <EntradaModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSalvar}
-      />
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
 export default EntradasPage;
- 

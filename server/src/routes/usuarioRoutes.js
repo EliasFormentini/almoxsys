@@ -1,14 +1,11 @@
 const { Router } = require("express");
 const usuarioController = require("../controllers/usuarioController");
-const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = Router();
 
-// Registro e login
+// Rotas de autenticação e perfil de usuário
 router.post("/register", usuarioController.register);
 router.post("/login", usuarioController.login);
-
-// Perfil (rota protegida)
-router.get("/profile", authMiddleware, usuarioController.profile);
+router.get("/profile", usuarioController.profile);
 
 module.exports = router;

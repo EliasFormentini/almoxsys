@@ -16,7 +16,7 @@ const FornecedoresPage = () => {
 
   const carregarFornecedores = async () => {
     try {
-      const response = await fornecedorService.listar();
+      const response = await fornecedorService.listarFornecedores();
       setFornecedores(response.data || []);
     } catch (error) {
       console.error("Erro ao carregar fornecedores:", error);
@@ -58,7 +58,6 @@ const FornecedoresPage = () => {
     }
   };
 
-  // 🔍 Filtragem
   const filtrados = useMemo(() => {
     return fornecedores.filter(
       (f) =>
@@ -69,7 +68,6 @@ const FornecedoresPage = () => {
     );
   }, [fornecedores, termoBusca]);
 
-  // 🔃 Ordenação
   const handleSort = (key) => {
     setSortConfig((prev) =>
       prev.key === key

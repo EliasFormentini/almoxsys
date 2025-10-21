@@ -1,22 +1,15 @@
 const { Router } = require("express");
 const movimentacaoController = require("../controllers/movimentacaoController");
-const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = Router();
 
-router.use(authMiddleware);
-
-// Listar movimentações (opcional filtro por tipo, produto ou usuário)
+// LISTAR todas as movimentações (usado para entradas)
 router.get("/", movimentacaoController.list);
 
-// Criar movimentação
-router.post("/", movimentacaoController.create);
-
-// Buscar movimentação por ID
+// BUSCAR movimentação por ID
 router.get("/:id", movimentacaoController.getById);
 
-router.post("/entradas", movimentacaoController.createEntrada);
-
+// CRIAR nova movimentação (entrada ou saída)
+router.post("/", movimentacaoController.create);
 
 module.exports = router;
-

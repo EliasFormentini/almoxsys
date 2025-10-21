@@ -1,11 +1,8 @@
 const { Router } = require("express");
 const produtoController = require("../controllers/produtoController");
-// const authMiddleware = require("../middlewares/authMiddleware");
 
 const router = Router();
 
-// // Todas as rotas protegidas (só usuários logados podem acessar)
-// router.use(authMiddleware);
 
 // CRUD de produtos
 router.get("/", produtoController.list);

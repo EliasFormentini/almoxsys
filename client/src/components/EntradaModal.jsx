@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import SelecionarProdutoModal from "./SelecionarProdutoModal";
 import SelecionarFornecedorModal from "./SelecionarFornecedorModal";
+import { Trash2 } from "lucide-react";
 
 const EntradaModal = ({ isOpen, onClose, onSave }) => {
   const [abaAtiva, setAbaAtiva] = useState("dados");
@@ -30,6 +31,13 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
       { id_produto: produto.id, nome: produto.nome, quantidade, valor_unitario, valor_total },
     ]);
     setMostrarSelecaoProduto(false);
+  };
+
+  const removerProduto = (index) => {
+    if (window.confirm("Remover este produto da lista?")) {
+      const novaLista = produtos.filter((_, i) => i !== index);
+      setProdutos(novaLista);
+    }
   };
 
   const handleSalvar = () => {
@@ -92,6 +100,7 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
                   className="border rounded-md px-2 py-1 w-full"
                 />
               </div>
+
               <div className="flex space-x-2">
                 <div className="flex-1">
                   <label className="block text-sm">Número da Nota</label>
@@ -165,6 +174,7 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
                     <th className="p-2 border text-center">Qtd</th>
                     <th className="p-2 border text-center">Vlr Unit</th>
                     <th className="p-2 border text-center">Total</th>
+                    <th className="p-2 border text-center w-10">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -175,6 +185,15 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
                       <td className="p-2 border text-center">{p.valor_unitario.toFixed(2)}</td>
                       <td className="p-2 border text-center font-semibold text-blue-700">
                         {p.valor_total.toFixed(2)}
+                      </td>
+                      <td className="p-2 border text-center">
+                        <button
+                          onClick={() => removerProduto(i)}
+                          className="text-red-600 hover:text-red-800"
+                          title="Remover produto"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -225,3 +244,4 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
 };
 
 export default EntradaModal;
+
