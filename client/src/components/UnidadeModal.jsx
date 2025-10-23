@@ -51,19 +51,6 @@ const UnidadeModal = ({ isOpen, onClose, onSave, unidadeSelecionada }) => {
 
         {/* Formulário */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sigla
-            </label>
-            <input
-              type="text"
-              value={sigla}
-              onChange={(e) => setSigla(e.target.value)}
-              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Digite a sigla da unidade"
-              autoFocus
-            />
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -75,6 +62,20 @@ const UnidadeModal = ({ isOpen, onClose, onSave, unidadeSelecionada }) => {
               onChange={(e) => setDescricao(e.target.value)}
               className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Digite a descrição da unidade"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sigla
+            </label>
+            <input
+              type="text"
+              value={sigla}
+              onChange={(e) => setSigla(e.target.value.toUpperCase().slice(0, 3))}
+              className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Digite a sigla da unidade"
+              autoFocus
             />
           </div>
 
