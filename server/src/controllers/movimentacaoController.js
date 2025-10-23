@@ -1,146 +1,8 @@
-// const { Movimentacao, Produto, Usuario, Pedido, Fornecedor } = require("../models");
-
-// const movimentacaoController = {
-//   async list(req, res) {
-//     try {
-//       const { tipo, id_produto, id_usuario } = req.query;
-//       const where = {};
-//       if (tipo) where.tipo = tipo;
-//       if (id_produto) where.id_produto = id_produto;
-//       if (id_usuario) where.id_usuario = id_usuario;
-
-//       const movimentacoes = await Movimentacao.findAll({
-//         where,
-//         include: [
-//           { model: Produto, as: "produto", attributes: ["id", "nome"] },
-//           { model: Usuario, as: "usuario", attributes: ["id", "nome"] },
-//           { model: Pedido, as: "pedido", attributes: ["id", "tipo", "status"] },
-//           { model: Fornecedor, as: "fornecedor", attributes: ["id", "nome"] },
-//         ],
-//         order: [["data_movimentacao", "DESC"]],
-//       });
-
-//       res.json(movimentacoes);
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Erro ao listar movimentações" });
-//     }
-//   },
-
-//   //  Registrar movimentação individual 
-//   async create(req, res) {
-//     try {
-//       const { tipo, id_produto, quantidade, id_pedido } = req.body;
-//       const id_usuario = req.user?.id || 1;
-
-//       const produto = await Produto.findByPk(id_produto);
-//       if (!produto) return res.status(404).json({ error: "Produto não encontrado" });
-
-//       if (tipo === "entrada") produto.estoque_atual += quantidade;
-//       else if (tipo === "saida") {
-//         if (produto.estoque_atual < quantidade)
-//           return res.status(400).json({ error: "Estoque insuficiente" });
-//         produto.estoque_atual -= quantidade;
-//       } else {
-//         return res.status(400).json({ error: "Tipo inválido, use 'entrada' ou 'saida'" });
-//       }
-
-//       await produto.save();
-
-//       const movimentacao = await Movimentacao.create({
-//         tipo,
-//         id_produto,
-//         quantidade,
-//         id_usuario,
-//         id_pedido: id_pedido || null,
-//       });
-
-//       res.status(201).json(movimentacao);
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Erro ao registrar movimentação" });
-//     }
-//   },
-
-//   // Criar múltiplos produtos em uma única entrada
-//   async createEntrada(req, res) {
-//     try {
-//       const { numero_nota, serie_nota, id_fornecedor, observacao, produtos } = req.body;
-//       const id_usuario = req.user?.id || 1;
-
-//       if (!produtos || produtos.length === 0)
-//         return res.status(400).json({ error: "Nenhum produto informado" });
-
-//       const movimentacoesCriadas = [];
-
-//       for (const item of produtos) {
-//         const { id_produto, quantidade, valor_unitario } = item;
-//         const valor_total = quantidade * valor_unitario;
-
-//         const novaMov = await Movimentacao.create({
-//           tipo: "entrada",
-//           id_produto,
-//           quantidade,
-//           valor_unitario,
-//           valor_total,
-//           numero_nota,
-//           serie_nota,
-//           id_fornecedor,
-//           observacao,
-//           id_usuario,
-//           data_movimentacao: new Date(),
-//         });
-
-//         // Atualiza estoque
-//         const produto = await Produto.findByPk(id_produto);
-//         if (produto) {
-//           produto.estoque_atual += quantidade;
-//           await produto.save();
-//         }
-
-//         movimentacoesCriadas.push(novaMov);
-//       }
-
-//       res.status(201).json({
-//         message: "Entrada registrada com sucesso",
-//         movimentacoes: movimentacoesCriadas,
-//       });
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Erro ao registrar entrada", details: err.message });
-//     }
-//   },
-
-//   async getById(req, res) {
-//     try {
-//       const { id } = req.params;
-//       const mov = await Movimentacao.findByPk(id, {
-//         include: [
-//           { model: Produto, as: "produto", attributes: ["id", "nome"] },
-//           { model: Usuario, as: "usuario", attributes: ["id", "nome"] },
-//           { model: Pedido, as: "pedido", attributes: ["id", "tipo", "status"] },
-//           { model: Fornecedor, as: "fornecedor", attributes: ["id", "nome"] },
-//         ],
-//         order: [["data_movimentacao", "DESC"]],
-//       });
-
-//       if (!mov) return res.status(404).json({ error: "Movimentação não encontrada" });
-//       res.json(mov);
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: "Erro ao buscar movimentação" });
-//     }
-//   },
-// };
-
-// module.exports = movimentacaoController;
-
-
 const { Movimentacao, Produto, Fornecedor, Usuario } = require("../models");
 const { Sequelize } = require("sequelize");
 
 const movimentacaoController = {
-  // ✅ LISTAR ENTRADAS AGRUPADAS (nota + série + fornecedor)
+  //  LISTAR ENTRADAS AGRUPADAS (nota + série + fornecedor)
   async list(req, res) {
     try {
       const { tipo } = req.query;
@@ -190,7 +52,6 @@ const movimentacaoController = {
     }
   },
 
-  // ✅ CRIAR NOVA MOVIMENTAÇÃO (entrada)
   async create(req, res) {
     try {
       const {
@@ -242,6 +103,54 @@ const movimentacaoController = {
       res.status(500).json({ error: "Erro ao criar movimentação", details: err.message });
     }
   },
+
+  async createEntrada(req, res) {
+    try {
+      const { numero_nota, serie_nota, id_fornecedor, observacao, produtos = [] } = req.body;
+
+      if (!numero_nota || produtos.length === 0) {
+        return res.status(400).json({ error: "Número da nota e produtos são obrigatórios." });
+      }
+
+      const novasMovimentacoes = [];
+
+      for (const item of produtos) {
+        const { id_produto, quantidade, valor_unitario } = item;
+        const produto = await Produto.findByPk(id_produto);
+        if (!produto) continue;
+
+        const valor_total = quantidade * valor_unitario;
+
+        // Atualiza estoque
+        produto.estoque_atual += quantidade;
+        await produto.save();
+
+        const mov = await Movimentacao.create({
+          tipo: "entrada",
+          id_produto,
+          quantidade,
+          valor_unitario,
+          valor_total,
+          numero_nota,
+          serie_nota,
+          id_fornecedor,
+          observacao,
+          data_movimentacao: new Date(),
+        });
+
+        novasMovimentacoes.push(mov);
+      }
+
+      res.status(201).json({
+        message: "Entrada registrada com sucesso",
+        movimentacoes: novasMovimentacoes,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erro ao criar entrada", details: err.message });
+    }
+  },
+
 
   // ✅ BUSCAR DETALHES DE UMA ENTRADA
   async getById(req, res) {

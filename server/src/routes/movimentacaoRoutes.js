@@ -3,13 +3,9 @@ const movimentacaoController = require("../controllers/movimentacaoController");
 
 const router = Router();
 
-// LISTAR todas as movimentações (usado para entradas)
 router.get("/", movimentacaoController.list);
-
-// BUSCAR movimentação por ID
 router.get("/:id", movimentacaoController.getById);
-
-// CRIAR nova movimentação (entrada ou saída)
 router.post("/", movimentacaoController.create);
+router.post("/entradas", movimentacaoController.createEntrada); 
 
 module.exports = router;

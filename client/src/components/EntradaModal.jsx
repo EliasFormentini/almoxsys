@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import SelecionarProdutoModal from "./SelecionarProdutoModal";
+import AdicionarProdutoModal from "./AdicionarProdutoModal";
 import SelecionarFornecedorModal from "./SelecionarFornecedorModal";
 import { Trash2 } from "lucide-react";
 
@@ -11,38 +12,32 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
     serie_nota: "",
     id_fornecedor: "",
     fornecedor_nome: "",
-    observacao: "",
   });
+
   const [produtos, setProdutos] = useState([]);
   const [mostrarSelecaoProduto, setMostrarSelecaoProduto] = useState(false);
+  const [mostrarAdicionarProduto, setMostrarAdicionarProduto] = useState(false);
+  const [produtoSelecionado, setProdutoSelecionado] = useState(null);
   const [mostrarSelecaoFornecedor, setMostrarSelecaoFornecedor] = useState(false);
 
   const handleChange = (e) => {
     setDadosEntrada({ ...dadosEntrada, [e.target.name]: e.target.value });
   };
 
-  const adicionarProduto = (produto) => {
-    const quantidade = parseFloat(prompt("Quantidade:")) || 0;
-    const valor_unitario = parseFloat(prompt("Valor unitário:")) || 0;
-    const valor_total = quantidade * valor_unitario;
-
-    setProdutos([
-      ...produtos,
-      { id_produto: produto.id, nome: produto.nome, quantidade, valor_unitario, valor_total },
-    ]);
-    setMostrarSelecaoProduto(false);
-  };
-
   const removerProduto = (index) => {
     if (window.confirm("Remover este produto da lista?")) {
-      const novaLista = produtos.filter((_, i) => i !== index);
-      setProdutos(novaLista);
+      setProdutos(produtos.filter((_, i) => i !== index));
     }
   };
 
   const handleSalvar = () => {
     if (!dadosEntrada.numero_nota) {
       alert("Informe o número da nota.");
+      return;
+    }
+
+    if (!dadosEntrada.id_fornecedor) {
+      alert("Selecione o fornecedor.");
       return;
     }
 
@@ -63,7 +58,7 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl">
         {/* Cabeçalho */}
-        <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center">
+        <div className="bg-blue-600 text-white px-4 py-3 flex justify-between items-center rounded-t-lg">
           <h2 className="text-lg font-semibold">Nova Entrada</h2>
           <button onClick={onClose} className="text-xl hover:text-gray-200">
             ✕
@@ -147,16 +142,6 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
                   </p>
                 )}
               </div>
-
-              <div>
-                <label className="block text-sm">Observação</label>
-                <textarea
-                  name="observacao"
-                  value={dadosEntrada.observacao}
-                  onChange={handleChange}
-                  className="border rounded-md px-2 py-1 w-full"
-                />
-              </div>
             </div>
           ) : (
             <div>
@@ -182,7 +167,9 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
                     <tr key={i}>
                       <td className="p-2 border">{p.nome}</td>
                       <td className="p-2 border text-center">{p.quantidade}</td>
-                      <td className="p-2 border text-center">{p.valor_unitario.toFixed(2)}</td>
+                      <td className="p-2 border text-center">
+                        {p.valor_unitario.toFixed(2)}
+                      </td>
                       <td className="p-2 border text-center font-semibold text-blue-700">
                         {p.valor_total.toFixed(2)}
                       </td>
@@ -224,7 +211,21 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
       <SelecionarProdutoModal
         isOpen={mostrarSelecaoProduto}
         onClose={() => setMostrarSelecaoProduto(false)}
-        onSelect={adicionarProduto}
+        onSelect={(produto) => {
+          setProdutoSelecionado(produto);
+          setMostrarSelecaoProduto(false);
+          setMostrarAdicionarProduto(true);
+        }}
+      />
+
+      <AdicionarProdutoModal
+        isOpen={mostrarAdicionarProduto}
+        produto={produtoSelecionado}
+        onClose={() => setMostrarAdicionarProduto(false)}
+        onConfirm={(novoProduto) => {
+          setProdutos([...produtos, novoProduto]);
+          setMostrarAdicionarProduto(false);
+        }}
       />
 
       <SelecionarFornecedorModal
@@ -244,4 +245,3 @@ const EntradaModal = ({ isOpen, onClose, onSave }) => {
 };
 
 export default EntradaModal;
-

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { listarEntradas } from "../services/movimentacaoService";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import EntradaModal from "../components/EntradaModal"; // ✅ importar o modal
+import EntradaModal from "../components/EntradaModal";
+import { criarEntrada } from "../services/movimentacaoService";
+
 
 const EntradasPage = () => {
   const [entradas, setEntradas] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
-  const [mostrarModal, setMostrarModal] = useState(false); // ✅ controla exibição do modal
+  const [mostrarModal, setMostrarModal] = useState(false);
 
   const carregarEntradas = async () => {
     try {
@@ -39,16 +41,23 @@ const EntradasPage = () => {
         </button>
       </div>
 
-      {/* ✅ Modal de nova entrada */}
       {mostrarModal && (
         <EntradaModal
+          isOpen={mostrarModal}
           onClose={() => setMostrarModal(false)}
-          onSave={() => {
-            setMostrarModal(false);
-            carregarEntradas();
+          onSave={async (entrada) => {
+            try {
+              await criarEntrada(entrada);   // <-- envia pro backend
+              await carregarEntradas();      // <-- atualiza tabela
+              setMostrarModal(false);
+            } catch (err) {
+              console.error("Erro ao salvar entrada:", err);
+              alert("Erro ao salvar entrada!");
+            }
           }}
         />
       )}
+
 
       {/* Tabela de entradas */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -85,9 +94,9 @@ const EntradasPage = () => {
                       <td className="px-4 py-2 border-b text-right font-semibold">
                         {valorTotal
                           ? valorTotal.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })
+                            style: "currency",
+                            currency: "BRL",
+                          })
                           : "R$ 0,00"}
                       </td>
                       <td className="px-4 py-2 border-b text-center">
