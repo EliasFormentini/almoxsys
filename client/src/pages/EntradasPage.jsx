@@ -35,7 +35,7 @@ const EntradasPage = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
         <button
           className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
-          onClick={() => setMostrarModal(true)} // ✅ abre modal
+          onClick={() => setMostrarModal(true)} 
         >
           Nova Entrada
         </button>
@@ -47,8 +47,8 @@ const EntradasPage = () => {
           onClose={() => setMostrarModal(false)}
           onSave={async (entrada) => {
             try {
-              await criarEntrada(entrada);   // <-- envia pro backend
-              await carregarEntradas();      // <-- atualiza tabela
+              await criarEntrada(entrada);   
+              await carregarEntradas();     
               setMostrarModal(false);
             } catch (err) {
               console.error("Erro ao salvar entrada:", err);

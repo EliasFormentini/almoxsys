@@ -62,7 +62,7 @@ const SelecionarProdutoModal = ({ isOpen, onSelect, onClose }) => {
                     <tr
                       key={produto.id}
                       className="hover:bg-blue-50 cursor-pointer"
-                      onClick={() => onSelect && onSelect(produto)} // ✅ garante que onSelect é função
+                      onClick={() => onSelect && onSelect(produto)} 
                     >
                       <td className="border p-2">{produto.id}</td>
                       <td className="border p-2">{produto.nome}</td>
@@ -70,7 +70,7 @@ const SelecionarProdutoModal = ({ isOpen, onSelect, onClose }) => {
                         {produto.categoria?.nome || "—"}
                       </td>
                       <td className="border p-2 text-center">
-                        {produto.unidade_medida || "—"}
+                        {produto.unidades?.sigla || "—"}
                       </td>
                       <td className="border p-2 text-center">
                         {produto.estoque_atual}

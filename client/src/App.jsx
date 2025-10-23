@@ -7,6 +7,7 @@ import FornecedoresPage from "./pages/FornecedoresPage";
 import EntradasPage from "./pages/EntradasPage";
 
 export default function App() {
+
   return (
     <Router>
       <Routes>

@@ -21,7 +21,6 @@ const FornecedorModal = ({ isOpen, onClose, onSave, fornecedorSelecionado }) => 
     }
   }, [fornecedorSelecionado]);
 
-  // Máscaras simples (sem libs externas)
   const formatCNPJ = (value) => {
     return value
       .replace(/\D/g, "")

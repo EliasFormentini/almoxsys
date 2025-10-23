@@ -51,7 +51,7 @@ const pedidoController = {
   async updateStatus(req, res) {
     try {
       const { id } = req.params;
-      const { status } = req.body; // "aprovado" ou "rejeitado"
+      const { status } = req.body;
 
       const pedido = await Pedido.findByPk(id, { include: [ItemPedido] });
       if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
@@ -84,7 +84,7 @@ const pedidoController = {
     }
   },
 
-  // Obter pedido por ID
+
   async getById(req, res) {
     try {
       const { id } = req.params;

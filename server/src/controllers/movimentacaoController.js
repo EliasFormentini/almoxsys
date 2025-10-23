@@ -151,8 +151,6 @@ const movimentacaoController = {
     }
   },
 
-
-  // ✅ BUSCAR DETALHES DE UMA ENTRADA
   async getById(req, res) {
     try {
       const { id } = req.params;
