@@ -9,3 +9,6 @@ export const criarMovimentacao = (movimentacao) => axios.post(API_URL, movimenta
 
 export const listarProdutosEntrada = (numero_nota, serie_nota) =>
   axios.get(`${API_URL}?tipo=entrada&numero_nota=${numero_nota}&serie_nota=${serie_nota}`);
+
+export const listarSaidas = () => axios.get(`${API_URL}?tipo=saida`);
+export const criarSaida = (payload) => axios.post(API_URL, payload);

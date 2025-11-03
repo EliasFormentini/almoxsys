@@ -5,6 +5,8 @@ import UnidadesPage from "./pages/UnidadesPage";
 import ProdutosPage from "./pages/ProdutosPage";
 import FornecedoresPage from "./pages/FornecedoresPage";
 import EntradasPage from "./pages/EntradasPage";
+import SaidasPage from "./pages/SaidasPage";
+
 
 export default function App() {
 
@@ -17,6 +19,8 @@ export default function App() {
           <Route path="produtos" element={<ProdutosPage />} />
           <Route path="fornecedores" element={<FornecedoresPage />} />
           <Route path="entradas" element={<EntradasPage />} />
+          <Route path="/saidas" element={<SaidasPage />} />
+
         </Route>
       </Routes>
     </Router>
