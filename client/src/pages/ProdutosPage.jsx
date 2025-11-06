@@ -220,6 +220,7 @@ const ProdutosPage = () => {
               <Th label="Unidade" onSort={() => handleSort("unidade")} active={sortConfig.key === "unidade"} />
               <Th label="Estoque Atual" onSort={() => handleSort("estoque_atual")} active={sortConfig.key === "estoque_atual"} />
               <Th label="Estoque Mínimo" onSort={() => handleSort("estoque_minimo")} active={sortConfig.key === "estoque_minimo"} />
+              <Th label="Custo Médio" onSort={() => handleSort("custo_medio")} active={sortConfig.key === "custo_medio"} />
               <th className="px-4 py-3 border-b text-center w-40">Ações</th>
             </tr>
           </thead>
@@ -242,6 +243,7 @@ const ProdutosPage = () => {
                   <td className="px-4 py-2 border-b">
                     {Number(p.estoque_minimo) || 0}
                   </td>
+                  <td className="px-4 py-2 border-b">{p.custo_medio || "-"}</td>
                   <td className="px-4 py-2 border-b text-center space-x-2">
                     <button
                       onClick={() => handleEditar(p)}

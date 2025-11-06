@@ -1,26 +1,40 @@
 import React, { useState } from "react";
 import SelecionarProdutoModal from "./SelecionarProdutoModal";
+import AdicionarProdutoModal from "./AdicionarProdutoModal";
 import { Trash2 } from "lucide-react";
 import { criarSaida } from "../services/movimentacaoService";
 
 const SaidaModal = ({ isOpen, onClose, onSave }) => {
   const [abaAtiva, setAbaAtiva] = useState("dados");
+
+  // Saída não usa nota/série. Deixei data e observação.
   const [dados, setDados] = useState({
     data_movimentacao: new Date().toISOString().split("T")[0],
-    numero_nota: "",
-    serie_nota: "",
     observacao: "",
   });
+
   const [produtos, setProdutos] = useState([]);
   const [mostrarSelecaoProduto, setMostrarSelecaoProduto] = useState(false);
 
+  // sub-modal para informar a quantidade (valor = custo_medio fixo)
+  const [produtoParaAdicionar, setProdutoParaAdicionar] = useState(null);
+  const [mostrarAdicionarProduto, setMostrarAdicionarProduto] = useState(false);
+
   const handleChange = (e) => setDados({ ...dados, [e.target.name]: e.target.value });
 
-  const adicionarProduto = (p) => {
-    // abre a sub-modal com qty/valor? Se você já tem AdicionarProdutoModal integrado no SelecionarProdutoModal,
-    // p virá com quantidade/valor_unitario/valor_total preenchidos.
-    setProdutos((lst) => [...lst, p]);
+  // chamado ao escolher um produto na modal de seleção
+  const handleSelectProduto = (produto) => {
+    // esperamos que venha com custo_medio do backend
+    setProdutoParaAdicionar(produto);
+    setMostrarAdicionarProduto(true);
     setMostrarSelecaoProduto(false);
+  };
+
+  // confirma (com quantidade) e adiciona à grade
+  const confirmarAdicionarProduto = (itemComQtdECustos) => {
+    setProdutos((lst) => [...lst, itemComQtdECustos]);
+    setProdutoParaAdicionar(null);
+    setMostrarAdicionarProduto(false);
   };
 
   const removerProduto = (idx) => {
@@ -30,24 +44,26 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleSalvar = async () => {
-    if (!dados.numero_nota) return alert("Informe o número da nota.");
-    if (!produtos.length) return alert("Adicione pelo menos um produto.");
+    if (!produtos.length) {
+      alert("Adicione pelo menos um produto.");
+      return;
+    }
 
-    // Posta uma movimentação por item (mesma estratégia das entradas)
+    // cria uma movimentação por item
     for (const item of produtos) {
       await criarSaida({
         tipo: "saida",
-        id_produto: item.id_produto ?? item.id,
-        quantidade: item.quantidade,
-        valor_unitario: item.valor_unitario ?? 0,
-        numero_nota: dados.numero_nota,
-        serie_nota: dados.serie_nota,
+        id_produto: item.id_produto ?? item.id,          // id do produto
+        quantidade: item.quantidade,                     // informado na sub-modal
+        valor_unitario: item.valor_unitario,             // = custo_medio (fixo)
+        valor_total: item.valor_total,                   // quantidade * custo_medio
         observacao: dados.observacao || null,
         data_movimentacao: dados.data_movimentacao,
       });
     }
 
-    onSave?.();
+    onSave?.();     // recarrega lista na página
+    onClose?.();    // fecha modal
   };
 
   if (!isOpen) return null;
@@ -92,29 +108,6 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
                 />
               </div>
 
-              <div className="flex space-x-2">
-                <div className="flex-1">
-                  <label className="block text-sm">Número da Nota</label>
-                  <input
-                    type="text"
-                    name="numero_nota"
-                    value={dados.numero_nota}
-                    onChange={handleChange}
-                    className="border rounded-md px-2 py-1 w-full"
-                  />
-                </div>
-                <div className="w-32">
-                  <label className="block text-sm">Série</label>
-                  <input
-                    type="text"
-                    name="serie_nota"
-                    value={dados.serie_nota}
-                    onChange={handleChange}
-                    className="border rounded-md px-2 py-1 w-full"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm">Observação</label>
                 <textarea
@@ -122,6 +115,7 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
                   value={dados.observacao}
                   onChange={handleChange}
                   className="border rounded-md px-2 py-1 w-full"
+                  placeholder="Motivo da saída, setor, requisição, etc."
                 />
               </div>
             </div>
@@ -139,7 +133,7 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
                   <tr>
                     <th className="p-2 border">Produto</th>
                     <th className="p-2 border text-center">Qtd</th>
-                    <th className="p-2 border text-center">Vlr Unit</th>
+                    <th className="p-2 border text-center">Vlr Unit (custo médio)</th>
                     <th className="p-2 border text-center">Total</th>
                     <th className="p-2 border text-center w-10">Ações</th>
                   </tr>
@@ -193,11 +187,23 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
         </div>
       </div>
 
-      {/* Seletor de produtos (reutilizado) */}
+      {/* Modal: selecionar produto */}
       <SelecionarProdutoModal
         isOpen={mostrarSelecaoProduto}
         onClose={() => setMostrarSelecaoProduto(false)}
-        onSelect={adicionarProduto}
+        onSelect={handleSelectProduto}
+      />
+
+      {/* Modal: informar quantidade (valor = custo_medio travado) */}
+      <AdicionarProdutoModal
+        isOpen={mostrarAdicionarProduto}
+        produto={produtoParaAdicionar}
+        modo="saida"                       // << trava o valor_unitário = custo_medio
+        onConfirm={confirmarAdicionarProduto}
+        onClose={() => {
+          setMostrarAdicionarProduto(false);
+          setProdutoParaAdicionar(null);
+        }}
       />
     </div>
   );

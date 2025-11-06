@@ -2,56 +2,61 @@ const { Movimentacao, Produto, Fornecedor, Usuario } = require("../models");
 const { Sequelize } = require("sequelize");
 
 const movimentacaoController = {
-  //  LISTAR ENTRADAS AGRUPADAS (nota + série + fornecedor)
+  // LISTAR (entradas agrupadas / saídas individuais)
   async list(req, res) {
     try {
       const { tipo } = req.query;
       const where = {};
       if (tipo) where.tipo = tipo;
 
-      // Busca todas as movimentações com joins e aliases corretos
       const movimentacoes = await Movimentacao.findAll({
         where,
         include: [
-          { model: Produto, as: "produto", attributes: ["id", "nome"] },
+          { model: Produto, as: "produto", attributes: ["id", "nome", "custo_medio"] },
           { model: Fornecedor, as: "fornecedor", attributes: ["id", "nome"] },
           { model: Usuario, as: "usuario", attributes: ["id", "nome"] },
         ],
         order: [["data_movimentacao", "DESC"]],
       });
 
-      // Agrupando movimentações pela nota + série + fornecedor
-      const agrupadas = Object.values(
-        movimentacoes.reduce((acc, mov) => {
-          const chave = `${mov.numero_nota}-${mov.serie_nota}-${mov.id_fornecedor || 0}`;
-          if (!acc[chave]) {
-            acc[chave] = {
+      // Entradas agrupadas
+      if (tipo === "entrada") {
+        const agrupadas = Object.values(
+          movimentacoes.reduce((acc, mov) => {
+            const chave = `${mov.numero_nota}-${mov.serie_nota}-${mov.id_fornecedor || 0}`;
+            if (!acc[chave]) {
+              acc[chave] = {
+                id: mov.id,
+                numero_nota: mov.numero_nota,
+                serie_nota: mov.serie_nota,
+                data_movimentacao: mov.data_movimentacao,
+                fornecedor: mov.fornecedor,
+                itens: [],
+              };
+            }
+            acc[chave].itens.push({
               id: mov.id,
-              numero_nota: mov.numero_nota,
-              serie_nota: mov.serie_nota,
-              data_movimentacao: mov.data_movimentacao,
-              fornecedor: mov.fornecedor,
-              itens: [],
-            };
-          }
-          acc[chave].itens.push({
-            id: mov.id,
-            produto: mov.produto,
-            quantidade: mov.quantidade,
-            valor_unitario: mov.valor_unitario,
-            valor_total: mov.valor_total,
-          });
-          return acc;
-        }, {})
-      );
+              produto: mov.produto,
+              quantidade: mov.quantidade,
+              valor_unitario: mov.valor_unitario,
+              valor_total: mov.valor_total,
+            });
+            return acc;
+          }, {})
+        );
 
-      res.json(agrupadas);
+        return res.json(agrupadas);
+      }
+
+      // Saídas → sem agrupamento
+      return res.json(movimentacoes);
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Erro ao listar movimentações", details: err.message });
     }
   },
 
+  // CRIAR MOVIMENTAÇÃO (entrada ou saída)
   async create(req, res) {
     try {
       const {
@@ -63,6 +68,7 @@ const movimentacaoController = {
         serie_nota,
         id_fornecedor,
         id_usuario,
+        observacao,
       } = req.body;
 
       const produto = await Produto.findByPk(id_produto);
@@ -70,30 +76,57 @@ const movimentacaoController = {
         return res.status(404).json({ error: "Produto não encontrado" });
       }
 
-      const valor_total = quantidade * valor_unitario;
+      let valorUnitario = valor_unitario;
+      let valorTotal = 0;
 
-      // Atualiza estoque se for entrada
       if (tipo === "entrada") {
-        produto.estoque_atual += quantidade;
+        // === ENTRADA ===
+        const qtd = Number(quantidade);
+        const vu = Number(valor_unitario);
+
+        const estoqueAnterior = Number(produto.estoque_atual || 0);
+        const custoAnterior = Number(produto.custo_medio || 0);
+
+        // custo médio ponderado
+        const novoEstoque = estoqueAnterior + qtd;
+        const novoCustoMedio =
+          novoEstoque > 0
+            ? ((custoAnterior * estoqueAnterior) + (vu * qtd)) / novoEstoque
+            : 0;
+
+        produto.estoque_atual = novoEstoque;
+        produto.custo_medio = novoCustoMedio;
+        await produto.save();
+
+        valorUnitario = vu;
+        valorTotal = qtd * vu;
       } else if (tipo === "saida") {
-        if (produto.estoque_atual < quantidade) {
+        // === SAÍDA ===
+        const qtd = Number(quantidade);
+        const custoMedio = Number(produto.custo_medio || 0);
+
+        if (produto.estoque_atual < qtd) {
           return res.status(400).json({ error: "Estoque insuficiente" });
         }
-        produto.estoque_atual -= quantidade;
-      }
-      await produto.save();
 
-      // Cria a movimentação
+        produto.estoque_atual -= qtd;
+        await produto.save();
+
+        valorUnitario = custoMedio;
+        valorTotal = qtd * custoMedio;
+      }
+
       const novaMov = await Movimentacao.create({
         tipo,
         id_produto,
         quantidade,
-        valor_unitario,
-        valor_total,
-        numero_nota,
-        serie_nota,
-        id_fornecedor,
+        valor_unitario: valorUnitario,
+        valor_total: valorTotal,
+        numero_nota: tipo === "entrada" ? numero_nota : null,
+        serie_nota: tipo === "entrada" ? serie_nota : null,
+        id_fornecedor: tipo === "entrada" ? id_fornecedor : null,
         id_usuario,
+        observacao: observacao || null,
         data_movimentacao: new Date(),
       });
 
@@ -104,6 +137,7 @@ const movimentacaoController = {
     }
   },
 
+  // CRIAR ENTRADA (com vários produtos)
   async createEntrada(req, res) {
     try {
       const { numero_nota, serie_nota, id_fornecedor, observacao, produtos = [] } = req.body;
@@ -119,17 +153,29 @@ const movimentacaoController = {
         const produto = await Produto.findByPk(id_produto);
         if (!produto) continue;
 
-        const valor_total = quantidade * valor_unitario;
+        const qtd = Number(quantidade);
+        const vu = Number(valor_unitario);
 
-        // Atualiza estoque
-        produto.estoque_atual += quantidade;
+        const estoqueAnterior = Number(produto.estoque_atual || 0);
+        const custoAnterior = Number(produto.custo_medio || 0);
+
+        const novoEstoque = estoqueAnterior + qtd;
+        const novoCustoMedio =
+          novoEstoque > 0
+            ? ((custoAnterior * estoqueAnterior) + (vu * qtd)) / novoEstoque
+            : 0;
+
+        produto.estoque_atual = novoEstoque;
+        produto.custo_medio = novoCustoMedio;
         await produto.save();
+
+        const valor_total = qtd * vu;
 
         const mov = await Movimentacao.create({
           tipo: "entrada",
           id_produto,
-          quantidade,
-          valor_unitario,
+          quantidade: qtd,
+          valor_unitario: vu,
           valor_total,
           numero_nota,
           serie_nota,
@@ -156,7 +202,7 @@ const movimentacaoController = {
       const { id } = req.params;
       const mov = await Movimentacao.findByPk(id, {
         include: [
-          { model: Produto, as: "produto", attributes: ["id", "nome"] },
+          { model: Produto, as: "produto", attributes: ["id", "nome", "custo_medio"] },
           { model: Fornecedor, as: "fornecedor", attributes: ["id", "nome"] },
           { model: Usuario, as: "usuario", attributes: ["id", "nome"] },
         ],
