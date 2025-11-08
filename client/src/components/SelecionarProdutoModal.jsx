@@ -70,7 +70,7 @@ const SelecionarProdutoModal = ({ isOpen, onSelect, onClose }) => {
                         {produto.categoria?.nome || "—"}
                       </td>
                       <td className="border p-2 text-center">
-                        {produto.unidades?.sigla || "—"}
+                        {produto.unidade?.sigla || "—"}
                       </td>
                       <td className="border p-2 text-center">
                         {produto.estoque_atual}

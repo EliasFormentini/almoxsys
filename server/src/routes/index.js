@@ -8,6 +8,7 @@ const categoriaRoutes = require("./categoriaRoutes");
 const unidadeRoutes = require("./unidadeRoutes");
 const movimentacaoRoutes = require("./movimentacaoRoutes");
 const fornecedorRoutes = require("./fornecedorRoutes");
+const inventarioRoutes = require("./inventarioRoutes");
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/categorias", categoriaRoutes);
 router.use("/unidades", unidadeRoutes);
 router.use("/movimentacoes", movimentacaoRoutes);
 router.use("/fornecedores", fornecedorRoutes);
+router.use("/inventario", inventarioRoutes);
 
 module.exports = router;

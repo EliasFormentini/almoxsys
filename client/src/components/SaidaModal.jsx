@@ -44,27 +44,61 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const handleSalvar = async () => {
-    if (!produtos.length) {
-      alert("Adicione pelo menos um produto.");
+  try {
+    if (!dados.data_movimentacao) {
+      alert("Informe a data da saída.");
+      setAbaAtiva("dados");
       return;
     }
 
-    // cria uma movimentação por item
-    for (const item of produtos) {
-      await criarSaida({
-        tipo: "saida",
-        id_produto: item.id_produto ?? item.id,          // id do produto
-        quantidade: item.quantidade,                     // informado na sub-modal
-        valor_unitario: item.valor_unitario,             // = custo_medio (fixo)
-        valor_total: item.valor_total,                   // quantidade * custo_medio
-        observacao: dados.observacao || null,
-        data_movimentacao: dados.data_movimentacao,
-      });
+    if (!produtos.length) {
+      alert("Adicione pelo menos um produto.");
+      setAbaAtiva("produtos");
+      return;
     }
 
-    onSave?.();     // recarrega lista na página
-    onClose?.();    // fecha modal
-  };
+    for (const item of produtos) {
+      const id_produto =
+        item.id_produto || item.id || item.produto_id;
+
+      const quantidade = Number(item.quantidade || 0);
+
+      if (!id_produto || quantidade <= 0) {
+        console.error("Item inválido ao salvar saída:", item);
+        alert("Erro ao montar a saída: produto ou quantidade inválidos.");
+        return;
+      }
+
+      const payload = {
+        tipo: "saida",
+        id_produto,
+        quantidade,
+        // backend calcula com custo_medio, esse campo é ignorado se vier
+        valor_unitario: item.valor_unitario,
+        observacao: dados.observacao || null,
+        data_movimentacao: dados.data_movimentacao,
+      };
+
+      console.log("Enviando saída:", payload);
+      await criarSaida(payload);
+    }
+
+    onSave?.();
+    onClose?.();
+  } catch (err) {
+    console.error(
+      "Erro ao salvar saída:",
+      err.response?.data || err.message || err
+    );
+
+    alert(
+      err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Erro ao salvar saída. Veja o console para detalhes."
+    );
+  }
+};
+
 
   if (!isOpen) return null;
 

@@ -12,17 +12,15 @@ const AdicionarProdutoModal = ({ isOpen, produto, modo = "entrada", onConfirm, o
   const [quantidade, setQuantidade] = useState("");
   const [valorUnitario, setValorUnitario] = useState("");
 
-  // Em SAÍDA o valor unitário vem do custo_medio e fica travado
   const valorUnitarioSaida = produto?.custo_medio ?? 0;
   const isSaida = modo === "saida";
 
   useEffect(() => {
     if (isOpen) {
       setQuantidade("");
-      // entrada: campo livre; saída: fixa no custo médio
       setValorUnitario(isSaida ? String(Number(valorUnitarioSaida).toFixed(2)) : "");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [isOpen, isSaida, valorUnitarioSaida]);
 
   if (!isOpen || !produto) return null;
@@ -42,7 +40,7 @@ const AdicionarProdutoModal = ({ isOpen, produto, modo = "entrada", onConfirm, o
       id_produto: produto.id,
       nome: produto.nome,
       quantidade: qtd,
-      valor_unitario: valorUnit,   // saída = custo_medio; entrada = digitado
+      valor_unitario: valorUnit,   
       valor_total: valorTotal,
     });
   };

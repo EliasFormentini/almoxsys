@@ -45,6 +45,39 @@ const movimentacaoController = {
           }, {})
         );
 
+          // Saídas agrupadas (por data + observação)
+      if (tipo === "saida") {
+        const agrupadas = Object.values(
+          movimentacoes.reduce((acc, mov) => {
+            const dataKey = mov.data_movimentacao
+              ? new Date(mov.data_movimentacao).toISOString().slice(0, 10)
+              : "";
+            const chave = `${dataKey}-${mov.observacao || ""}`;
+
+            if (!acc[chave]) {
+              acc[chave] = {
+                id: mov.id, // apenas para key no front
+                data_movimentacao: mov.data_movimentacao,
+                observacao: mov.observacao,
+                itens: [],
+              };
+            }
+
+            acc[chave].itens.push({
+              id: mov.id,
+              produto: mov.produto,
+              quantidade: mov.quantidade,
+              valor_unitario: mov.valor_unitario,
+              valor_total: mov.valor_total,
+            });
+
+            return acc;
+          }, {})
+        );
+
+        return res.json(agrupadas);
+      }
+
         return res.json(agrupadas);
       }
 
@@ -127,7 +160,9 @@ const movimentacaoController = {
         id_fornecedor: tipo === "entrada" ? id_fornecedor : null,
         id_usuario,
         observacao: observacao || null,
-        data_movimentacao: new Date(),
+        data_movimentacao: req.body.data_movimentacao
+          ? new Date(req.body.data_movimentacao)
+          : new Date(),
       });
 
       res.status(201).json(novaMov);

@@ -8,21 +8,102 @@ const SaidasPage = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
 
-  const carregarSaidas = async () => {
-    try {
-      const { data } = await listarSaidas();
-      setSaidas(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error("Erro ao carregar saídas:", err);
+const carregarSaidas = async () => {
+  try {
+    const { data } = await listarSaidas();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      setSaidas([]);
+      return;
     }
-  };
+
+    // se já vier no formato agrupado (com itens), só usa
+    if (Array.isArray(data[0].itens)) {
+      setSaidas(data);
+      return;
+    }
+
+    // senão: agrupa aqui (formato vindo do Movimentacao.list tipo=saida)
+    const gruposMap = {};
+
+    data.forEach((mov) => {
+      if (mov.tipo !== "saida") return;
+
+      const dataKey = mov.data_movimentacao
+        ? new Date(mov.data_movimentacao).toISOString().slice(0, 10)
+        : "";
+
+      const chave = `${dataKey}-${mov.observacao || ""}`;
+
+      if (!gruposMap[chave]) {
+        gruposMap[chave] = {
+          id: mov.id, // só para key no React
+          data_movimentacao: mov.data_movimentacao,
+          observacao: mov.observacao,
+          itens: [],
+        };
+      }
+
+      gruposMap[chave].itens.push({
+        id: mov.id,
+        quantidade: mov.quantidade,
+        valor_unitario: mov.valor_unitario,
+        valor_total: mov.valor_total,
+        produto: mov.produto, // vem do include
+      });
+    });
+
+    const agrupadas = Object.values(gruposMap);
+    setSaidas(agrupadas);
+  } catch (err) {
+    console.error("Erro ao carregar saídas:", err);
+    setSaidas([]);
+  }
+
+
+// helper mantém
+const getItens = (grupo) =>
+  grupo.itens || grupo.produtos || grupo.saida_itens || [];
+
+// idem
+const calcularValorTotal = (grupo) => {
+  const itens = getItens(grupo);
+
+  return itens.reduce((acc, it) => {
+    const valorTotalItem =
+      Number(it.valor_total) ||
+      Number(it.valor_unitario || 0) * Number(it.quantidade || 0);
+
+    return acc + (isNaN(valorTotalItem) ? 0 : valorTotalItem);
+  }, 0);
+};
+
+};
+
 
   useEffect(() => {
     carregarSaidas();
   }, []);
 
   const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
+
+  // Garante que pegamos o array correto de itens independente do nome
+  const getItens = (grupo) =>
+    grupo.itens || grupo.produtos || grupo.saida_itens || [];
+
+  // Calcula o total da saída
+  const calcularValorTotal = (grupo) => {
+    const itens = getItens(grupo);
+
+    return itens.reduce((acc, it) => {
+      const valorTotalItem =
+        Number(it.valor_total) ||
+        Number(it.valor_unitario || 0) * Number(it.quantidade || 0);
+
+      return acc + (isNaN(valorTotalItem) ? 0 : valorTotalItem);
+    }, 0);
   };
 
   return (
@@ -52,9 +133,8 @@ const SaidasPage = () => {
         <table className="min-w-full border border-gray-200">
           <thead className="bg-gray-100 text-gray-700 text-sm">
             <tr>
-              <th className="px-4 py-3 border-b text-left">Nº Nota</th>
-              <th className="px-4 py-3 border-b text-left">Série</th>
               <th className="px-4 py-3 border-b text-left">Data</th>
+              <th className="px-4 py-3 border-b text-left">Observação</th>
               <th className="px-4 py-3 border-b text-right">Valor Total</th>
               <th className="px-4 py-3 border-b text-center w-16">Ações</th>
             </tr>
@@ -62,21 +142,25 @@ const SaidasPage = () => {
           <tbody>
             {saidas.length ? (
               saidas.map((grupo) => {
-                const valorTotal = grupo.itens?.reduce(
-                  (acc, it) => acc + Number(it.valor_total || 0),
-                  0
-                );
+                const itens = getItens(grupo);
+                const valorTotal = calcularValorTotal(grupo);
 
                 return (
-                  <React.Fragment key={`${grupo.numero_nota}-${grupo.serie_nota}-${grupo.id}`}>
+                  <React.Fragment key={grupo.id}>
+                    {/* Linha principal da saída */}
                     <tr className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2 border-b">{grupo.numero_nota}</td>
-                      <td className="px-4 py-2 border-b">{grupo.serie_nota}</td>
                       <td className="px-4 py-2 border-b">
-                        {new Date(grupo.data_movimentacao).toLocaleDateString("pt-BR")}
+                        {grupo.data_movimentacao
+                          ? new Date(grupo.data_movimentacao).toLocaleDateString(
+                              "pt-BR"
+                            )
+                          : "--/--/----"}
+                      </td>
+                      <td className="px-4 py-2 border-b max-w-xl truncate">
+                        {grupo.observacao || "—"}
                       </td>
                       <td className="px-4 py-2 border-b text-right font-semibold">
-                        {valorTotal
+                        {valorTotal > 0
                           ? valorTotal.toLocaleString("pt-BR", {
                               style: "currency",
                               currency: "BRL",
@@ -88,46 +172,73 @@ const SaidasPage = () => {
                           onClick={() => toggleExpand(grupo.id)}
                           className="text-gray-600 hover:text-gray-800"
                         >
-                          {expandedId === grupo.id ? <FaChevronUp /> : <FaChevronDown />}
+                          {expandedId === grupo.id ? (
+                            <FaChevronUp />
+                          ) : (
+                            <FaChevronDown />
+                          )}
                         </button>
                       </td>
                     </tr>
 
+                    {/* Itens da saída */}
                     {expandedId === grupo.id && (
                       <tr className="bg-gray-50">
-                        <td colSpan="5" className="p-0">
+                        <td colSpan="4" className="p-0">
                           <table className="w-full text-sm">
                             <thead className="bg-gray-100">
                               <tr>
                                 <th className="px-4 py-2 text-left">Produto</th>
-                                <th className="px-4 py-2 text-center">Qtd</th>
-                                <th className="px-4 py-2 text-right">Vlr Unit</th>
+                                <th className="px-4 py-2 text-center">Quantidade</th>
+                                <th className="px-4 py-2 text-right">
+                                  Valor Unitário
+                                </th>
                                 <th className="px-4 py-2 text-right">Total</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {grupo.itens?.length ? (
-                                grupo.itens.map((it, idx) => (
-                                  <tr key={idx} className="border-t">
-                                    <td className="px-4 py-2 border-b">{it.produto?.nome || "—"}</td>
-                                    <td className="px-4 py-2 border-b text-center">{it.quantidade}</td>
-                                    <td className="px-4 py-2 border-b text-right">
-                                      {Number(it.valor_unitario || 0).toLocaleString("pt-BR", {
-                                        style: "currency",
-                                        currency: "BRL",
-                                      })}
-                                    </td>
-                                    <td className="px-4 py-2 border-b text-right text-blue-700 font-medium">
-                                      {Number(it.valor_total || 0).toLocaleString("pt-BR", {
-                                        style: "currency",
-                                        currency: "BRL",
-                                      })}
-                                    </td>
-                                  </tr>
-                                ))
+                              {itens.length ? (
+                                itens.map((it, idx) => {
+                                  const totalItem =
+                                    Number(it.valor_total) ||
+                                    Number(it.valor_unitario || 0) *
+                                      Number(it.quantidade || 0);
+
+                                  return (
+                                    <tr key={idx} className="border-t">
+                                      <td className="px-4 py-2 border-b">
+                                        {it.produto?.nome ||
+                                          it.nome_produto ||
+                                          "—"}
+                                      </td>
+                                      <td className="px-4 py-2 border-b text-center">
+                                        {it.quantidade || 0}
+                                      </td>
+                                      <td className="px-4 py-2 border-b text-right">
+                                        {Number(
+                                          it.valor_unitario || 0
+                                        ).toLocaleString("pt-BR", {
+                                          style: "currency",
+                                          currency: "BRL",
+                                        })}
+                                      </td>
+                                      <td className="px-4 py-2 border-b text-right text-blue-700 font-medium">
+                                        {Number(
+                                          isNaN(totalItem) ? 0 : totalItem
+                                        ).toLocaleString("pt-BR", {
+                                          style: "currency",
+                                          currency: "BRL",
+                                        })}
+                                      </td>
+                                    </tr>
+                                  );
+                                })
                               ) : (
                                 <tr>
-                                  <td colSpan="4" className="text-center text-gray-500 italic py-2">
+                                  <td
+                                    colSpan="4"
+                                    className="text-center text-gray-500 italic py-2"
+                                  >
                                     Nenhum item nesta saída.
                                   </td>
                                 </tr>
@@ -142,7 +253,10 @@ const SaidasPage = () => {
               })
             ) : (
               <tr>
-                <td colSpan="5" className="px-4 py-4 text-center text-gray-500 italic">
+                <td
+                  colSpan="4"
+                  className="px-4 py-4 text-center text-gray-500 italic"
+                >
                   Nenhuma saída encontrada.
                 </td>
               </tr>

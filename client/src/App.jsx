@@ -6,6 +6,8 @@ import ProdutosPage from "./pages/ProdutosPage";
 import FornecedoresPage from "./pages/FornecedoresPage";
 import EntradasPage from "./pages/EntradasPage";
 import SaidasPage from "./pages/SaidasPage";
+import InventarioPage from "./pages/InventarioPage";
+import InventarioDetalhePage from "./pages/InventarioDetalhePage";
 
 
 export default function App() {
@@ -20,7 +22,8 @@ export default function App() {
           <Route path="fornecedores" element={<FornecedoresPage />} />
           <Route path="entradas" element={<EntradasPage />} />
           <Route path="/saidas" element={<SaidasPage />} />
-
+          <Route path="/inventario" element={<InventarioPage />} />
+          <Route path="/inventario/:id" element={<InventarioDetalhePage />} />
         </Route>
       </Routes>
     </Router>

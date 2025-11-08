@@ -14,6 +14,8 @@ module.exports = (sequelize) => {
     id_usuario: { type: DataTypes.INTEGER, allowNull: true },
     id_pedido: { type: DataTypes.INTEGER, allowNull: true },
     data_movimentacao: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+    observacao: {type: DataTypes.TEXT, allowNull: true,
+    },
   }, {
     tableName: "Movimentacoes",
     timestamps: false,
