@@ -1,20 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listarInventarios, abrirInventario } from "../services/inventarioService";
+import { useAlert } from "../hooks/useAlert";
+import { useToast } from "../contexts/ToastContext";
 
 const InventarioPage = () => {
     const [inventarios, setInventarios] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const { alert, confirm, AlertComponent } = useAlert();
+    const { showToast } = useToast();
+
     const carregar = async () => {
         try {
             const { data } = await listarInventarios();
-            // aqui usamos diretamente o que o backend retorna (InventarioProduto)
             setInventarios(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error("Erro ao carregar inventários:", err);
-            setInventarios([]);
+            await alert({
+                title: "Erro",
+                message: "Não foi possível carregar a lista de inventários.",
+                type: "error",
+            });
         } finally {
             setLoading(false);
         }
@@ -27,6 +35,13 @@ const InventarioPage = () => {
     const handleAbrirInventario = async () => {
         try {
             const { data } = await abrirInventario();
+
+            showToast({
+                type: "success",
+                title: "Inventário iniciado",
+                message: `Inventário #${data.id} foi criado e está ativo.`,
+            });
+
             navigate(`/inventario/${data.id}`);
         } catch (err) {
             console.error("Erro ao abrir inventário:", err.response?.data || err);
@@ -35,13 +50,19 @@ const InventarioPage = () => {
             const inventarioId = err.response?.data?.inventario_id;
 
             if (msg === "Já existe um inventário em aberto." && inventarioId) {
-                if (confirm("Já existe um inventário em aberto. Deseja ir para ele?")) {
-                    navigate(`/inventario/${inventarioId}`);
-                }
+                const ir = await confirm({
+                    title: "Inventário já aberto",
+                    message: "Já existe um inventário em aberto. Deseja ir para ele?",
+                    type: "warning",
+                });
+
+                if (ir) navigate(`/inventario/${inventarioId}`);
             } else {
-                alert(
-                    msg || "Erro ao abrir inventário. Veja o console para detalhes."
-                );
+                await alert({
+                    title: "Erro ao abrir inventário",
+                    message: msg || "Erro ao abrir inventário.",
+                    type: "error",
+                });
             }
         }
     };
@@ -89,10 +110,11 @@ const InventarioPage = () => {
                                     </td>
                                     <td className="px-4 py-2 border-b">
                                         <span
-                                            className={`px-2 py-1 rounded text-xs font-semibold ${inv.inventario_concluido
+                                            className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                inv.inventario_concluido
                                                     ? "bg-green-100 text-green-700"
                                                     : "bg-yellow-100 text-yellow-700"
-                                                }`}
+                                            }`}
                                         >
                                             {formatSituacao(inv)}
                                         </span>
@@ -120,8 +142,11 @@ const InventarioPage = () => {
                     </tbody>
                 </table>
             </div>
+
+            {AlertComponent}
         </div>
     );
 };
 
 export default InventarioPage;
+

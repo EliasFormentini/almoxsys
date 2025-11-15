@@ -5,13 +5,20 @@ import {
     concluirInventario,
 } from "../services/inventarioService";
 import { listarProdutos } from "../services/produtoService";
+
 import SelecionarProdutoModal from "../components/SelecionarProdutoModal";
 import AdicionarProdutoModal from "../components/AdicionarProdutoModal";
+
+import { useAlert } from "../hooks/useAlert";
+import { useToast } from "../contexts/ToastContext";
 
 
 const InventarioDetalhePage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    const { alert, confirm, AlertComponent } = useAlert();
+    const { showToast } = useToast();
 
     const [inventario, setInventario] = useState(null);
     const [produtos, setProdutos] = useState([]);
@@ -19,11 +26,9 @@ const InventarioDetalhePage = () => {
     const [loading, setLoading] = useState(true);
     const isConcluido = inventario?.inventario_concluido;
 
-
     const [mostrarSelecaoProduto, setMostrarSelecaoProduto] = useState(false);
     const [produtoParaAdicionar, setProdutoParaAdicionar] = useState(null);
     const [mostrarAdicionarProduto, setMostrarAdicionarProduto] = useState(false);
-
 
     useEffect(() => {
         const carregar = async () => {
@@ -35,18 +40,19 @@ const InventarioDetalhePage = () => {
 
                 setInventario(inv);
 
-                // produtos com estoque > 0
                 const ativos = (listaProdutos || []).filter(
                     (p) => (p.estoque_atual || 0) > 0
                 );
 
                 setProdutos(ativos);
-
-                // se no futuro o backend devolver contagens vinculadas, podemos preencher aqui
-                const mapa = {};
-                setContagens(mapa);
+                setContagens({});
             } catch (err) {
                 console.error("Erro ao carregar inventário:", err);
+                await alert({
+                    title: "Erro",
+                    message: "Não foi possível carregar os dados do inventário.",
+                    type: "error",
+                });
             } finally {
                 setLoading(false);
             }
@@ -55,6 +61,7 @@ const InventarioDetalhePage = () => {
         carregar();
     }, [id]);
 
+
     const handleChangeContagem = (produtoId, value) => {
         setContagens((prev) => ({
             ...prev,
@@ -62,45 +69,71 @@ const InventarioDetalhePage = () => {
         }));
     };
 
+
     const handleSalvarEConcluir = async () => {
+        if (!inventario) {
+            return await alert({
+                title: "Erro",
+                message: "Inventário não encontrado.",
+                type: "error",
+            });
+        }
+
+        const produtosComContagem = Object.entries(contagens)
+            .map(([id_produto, valor]) => ({
+                id_produto: Number(id_produto),
+                qtd_correta: Number(valor),
+            }))
+            .filter(
+                (item) =>
+                    item.id_produto > 0 &&
+                    !isNaN(item.qtd_correta) &&
+                    item.qtd_correta >= 0
+            );
+
+        if (!produtosComContagem.length) {
+            return await alert({
+                title: "Contagens faltando",
+                message: "Informe ao menos uma quantidade antes de concluir.",
+                type: "warning",
+            });
+        }
+
+        const confirmar = await confirm({
+            title: "Concluir inventário",
+            message: "Após concluir, o inventário não poderá mais ser alterado. Deseja continuar?",
+            type: "warning",
+        });
+
+        if (!confirmar) return;
+
         try {
-            if (!inventario) {
-                alert("Inventário não encontrado.");
-                return;
-            }
-
-            const produtosComContagem = Object.entries(contagens)
-                .map(([id_produto, valor]) => ({
-                    id_produto: Number(id_produto),
-                    qtd_correta: Number(valor),
-                }))
-                .filter(
-                    (item) =>
-                        item.id_produto > 0 &&
-                        !isNaN(item.qtd_correta) &&
-                        item.qtd_correta >= 0
-                );
-
-            if (!produtosComContagem.length) {
-                alert("Informe pelo menos uma quantidade para salvar.");
-                return;
-            }
-
             await concluirInventario(inventario.id, produtosComContagem);
 
-            alert("Inventário concluído e estoques ajustados.");
+            showToast({
+                type: "success",
+                title: "Inventário concluído",
+                message: "Estoques ajustados com sucesso.",
+            });
+
             navigate("/inventario");
         } catch (err) {
             console.error("Erro ao concluir inventário:", err.response?.data || err);
-            alert(
-                err.response?.data?.error ||
-                "Erro ao concluir inventário. Veja o console para detalhes."
-            );
+
+            showToast({
+                type: "error",
+                title: "Erro ao concluir inventário",
+                message: err.response?.data?.error || "Erro inesperado.",
+            });
+
+            await alert({
+                title: "Erro",
+                message: err.response?.data?.error || "Erro ao concluir inventário.",
+                type: "error",
+            });
         }
     };
 
-
-    // Selecionar produto extra (fora dos com estoque > 0)
     const handleSelectProduto = (produto) => {
         setProdutoParaAdicionar(produto);
         setMostrarAdicionarProduto(true);
@@ -108,7 +141,6 @@ const InventarioDetalhePage = () => {
     };
 
     const confirmarAdicionarProduto = (itemComQtd) => {
-        // adiciona na lista visual e permite contagem
         setProdutos((prev) => {
             const existe = prev.find((p) => p.id === itemComQtd.id);
             if (existe) return prev;
@@ -142,24 +174,27 @@ const InventarioDetalhePage = () => {
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
+            
             {/* Cabeçalho */}
             <div className="flex justify-between items-center mb-4 border-b pb-2">
                 <div>
                     <h1 className="text-2xl font-semibold text-gray-800">
                         Inventário #{inventario.id}
                     </h1>
-                      <p className="text-sm text-gray-600">
-    Situação:{" "}
-    {inventario?.inventario_concluido ? (
-      <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">
-        Concluído
-      </span>
-    ) : (
-      <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
-        Ativo
-      </span>
-    )}
-  </p>
+
+                    <p className="text-sm text-gray-600">
+                        Situação:{" "}
+                        {inventario?.inventario_concluido ? (
+                            <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">
+                                Concluído
+                            </span>
+                        ) : (
+                            <span className="px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
+                                Ativo
+                            </span>
+                        )}
+                    </p>
+
                     <p className="text-sm text-gray-600">
                         Abertura:{" "}
                         {inventario.data_abertura
@@ -172,23 +207,24 @@ const InventarioDetalhePage = () => {
                     {!isConcluido && (
                         <button
                             onClick={() => setMostrarSelecaoProduto(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+                            className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
                         >
                             + Adicionar produto
                         </button>
                     )}
+
                     {!isConcluido && (
                         <button
                             onClick={handleSalvarEConcluir}
-                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                            className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium shadow-sm"
                         >
-                            Salvar contagem e concluir
+                            Concluir inventário
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Tabela de produtos */}
+            {/* Tabela */}
             <div className="overflow-x-auto bg-white rounded-lg shadow">
                 <table className="min-w-full border border-gray-200 text-sm">
                     <thead className="bg-gray-100 text-gray-700">
@@ -206,9 +242,7 @@ const InventarioDetalhePage = () => {
                         {produtos.length ? (
                             produtos.map((p) => (
                                 <tr key={p.id} className="hover:bg-gray-50">
-                                    <td className="px-4 py-2 border-b">
-                                        {p.nome || `Produto ${p.id}`}
-                                    </td>
+                                    <td className="px-4 py-2 border-b">{p.nome}</td>
                                     <td className="px-4 py-2 border-b text-right">
                                         {p.estoque_atual ?? 0}
                                     </td>
@@ -218,11 +252,15 @@ const InventarioDetalhePage = () => {
                                             min="0"
                                             value={contagens[p.id] ?? ""}
                                             onChange={(e) =>
-                                                !isConcluido && handleChangeContagem(p.id, e.target.value)
+                                                !isConcluido &&
+                                                handleChangeContagem(p.id, e.target.value)
                                             }
                                             disabled={isConcluido}
-                                            className={`w-32 border rounded-md px-2 py-1 text-right ${isConcluido ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""
-                                                }`}
+                                            className={`w-32 border rounded-md px-2 py-1 text-right ${
+                                                isConcluido
+                                                    ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                                                    : ""
+                                            }`}
                                             placeholder="Qtd"
                                         />
                                     </td>
@@ -234,7 +272,7 @@ const InventarioDetalhePage = () => {
                                     colSpan="3"
                                     className="px-4 py-4 text-center text-gray-500 italic"
                                 >
-                                    Nenhum produto com estoque para este inventário.
+                                    Nenhum produto encontrado.
                                 </td>
                             </tr>
                         )}
@@ -259,6 +297,8 @@ const InventarioDetalhePage = () => {
                     setProdutoParaAdicionar(null);
                 }}
             />
+
+            {AlertComponent}
         </div>
     );
 };

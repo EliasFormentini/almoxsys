@@ -3,6 +3,8 @@ import * as produtoService from "../services/produtoService";
 import { listar as listarCategorias } from "../services/categoriaService";
 import ProdutoModal from "../components/ProdutoModal";
 import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { useAlert } from "../hooks/useAlert";
+import { useToast } from "../contexts/ToastContext";
 
 const ProdutosPage = () => {
   // --------- ESTADO BASE ---------
@@ -21,6 +23,9 @@ const ProdutosPage = () => {
   // --------- ORDENAÇÃO ----------
   const [sortConfig, setSortConfig] = useState({ key: "id", direction: "asc" });
 
+  const { alert, confirm, AlertComponent } = useAlert();
+  const { showToast } = useToast();
+
   useEffect(() => {
     carregarDados();
   }, []);
@@ -35,6 +40,11 @@ const ProdutosPage = () => {
       setCategorias(catResp.data || []);
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
+      await alert({
+        title: "Erro ao carregar",
+        message: "Não foi possível carregar os produtos/categorias.",
+        type: "error",
+      });
     }
   };
 
@@ -50,12 +60,29 @@ const ProdutosPage = () => {
   };
 
   const handleExcluir = async (id) => {
-    if (!window.confirm("Deseja realmente excluir este produto?")) return;
+    const ok = await confirm({
+      title: "Excluir produto",
+      message: "Deseja realmente excluir este produto?",
+      type: "warning",
+    });
+    if (!ok) return;
+
     try {
       await produtoService.deletar(id);
-      carregarDados();
+      await carregarDados();
+
+      showToast({
+        type: "success",
+        title: "Produto excluído",
+        message: `O produto #${id} foi removido com sucesso.`,
+      });
     } catch (err) {
       console.error("Erro ao excluir produto:", err);
+      showToast({
+        type: "error",
+        title: "Erro ao excluir",
+        message: "Não foi possível excluir o produto.",
+      });
     }
   };
 
@@ -63,14 +90,29 @@ const ProdutosPage = () => {
     try {
       if (data.id) {
         await produtoService.atualizar(data.id, data);
+        showToast({
+          type: "success",
+          title: "Produto atualizado",
+          message: `Produto "${data.nome}" atualizado com sucesso.`,
+        });
       } else {
         await produtoService.criar(data);
+        showToast({
+          type: "success",
+          title: "Produto criado",
+          message: `Produto "${data.nome}" criado com sucesso.`,
+        });
       }
+
       await carregarDados();
       setIsModalOpen(false);
     } catch (err) {
       console.error("Erro ao salvar produto:", err);
-      alert("Erro ao salvar produto.");
+      await alert({
+        title: "Erro ao salvar produto",
+        message: "Não foi possível salvar o produto. Verifique os dados e tente novamente.",
+        type: "error",
+      });
     }
   };
 
@@ -120,6 +162,8 @@ const ProdutosPage = () => {
           return Number(p.estoque_atual) || 0;
         case "estoque_minimo":
           return Number(p.estoque_minimo) || 0;
+        case "custo_medio":
+          return Number(p.custo_medio) || 0;
         default:
           return "";
       }
@@ -209,7 +253,7 @@ const ProdutosPage = () => {
         </label>
       </div>
 
-      {/* Tabela (embutida) */}
+      {/* Tabela */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full border border-gray-200">
           <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -228,22 +272,31 @@ const ProdutosPage = () => {
           <tbody>
             {sorted.length > 0 ? (
               sorted.map((p) => (
-
-                <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${p.status === "I" ? "opacity-60" : ""}`}>
+                <tr
+                  key={p.id}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    p.status === "I" ? "opacity-60" : ""
+                  }`}
+                >
                   <td className="px-4 py-2 border-b">{p.id}</td>
                   <td className="px-4 py-2 border-b">{p.nome}</td>
                   <td className="px-4 py-2 border-b">{p.categoria?.nome || "-"}</td>
                   <td className="px-4 py-2 border-b">{p.unidade?.sigla || "-"}</td>
-                  <td className={`px-4 py-2 border-b  ${Number(p.estoque_atual) < Number(p.estoque_minimo)
-                      ? "text-red-600 font-semibold"
-                      : "text-blue-700 font-medium"
-                    }`}>
+                  <td
+                    className={`px-4 py-2 border-b ${
+                      Number(p.estoque_atual) < Number(p.estoque_minimo)
+                        ? "text-red-600 font-semibold"
+                        : "text-blue-700 font-medium"
+                    }`}
+                  >
                     {Number(p.estoque_atual) || 0}
                   </td>
                   <td className="px-4 py-2 border-b">
                     {Number(p.estoque_minimo) || 0}
                   </td>
-                  <td className="px-4 py-2 border-b">{p.custo_medio || "-"}</td>
+                  <td className="px-4 py-2 border-b">
+                    {p.custo_medio != null ? Number(p.custo_medio).toFixed(2) : "-"}
+                  </td>
                   <td className="px-4 py-2 border-b text-center space-x-2">
                     <button
                       onClick={() => handleEditar(p)}
@@ -264,7 +317,10 @@ const ProdutosPage = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="7" className="px-4 py-4 text-center text-gray-500 italic">
+                <td
+                  colSpan="8"
+                  className="px-4 py-4 text-center text-gray-500 italic"
+                >
                   Nenhum produto encontrado.
                 </td>
               </tr>
@@ -279,8 +335,9 @@ const ProdutosPage = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSalvar}
         produtoSelecionado={produtoSelecionado}
-        categorias={categorias}
       />
+
+      {AlertComponent}
     </div>
   );
 };
@@ -291,7 +348,9 @@ const Th = ({ label, onSort, active }) => (
     <button
       type="button"
       onClick={onSort}
-      className={`inline-flex items-center gap-1 font-medium ${active ? "text-blue-700" : "text-gray-700"}`}
+      className={`inline-flex items-center gap-1 font-medium ${
+        active ? "text-blue-700" : "text-gray-700"
+      }`}
       title="Ordenar"
     >
       {label}

@@ -1,13 +1,24 @@
 // src/services/produtoService.js
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/produtos";
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+});
 
+// LISTAR
+export const listar = () => api.get("/produtos");
 // compatível com InventarioDetalhePage.jsx
-export const listarProdutos = () => axios.get(API_URL);
+export const listarProdutos = listar;
 
-// demais operações CRUD
-export const criarProduto = (produto) => axios.post(API_URL, produto);
-export const atualizarProduto = (id, produto) => axios.put(`${API_URL}/${id}`, produto);
-export const deletarProduto = (id) => axios.delete(`${API_URL}/${id}`);
-export const listar = listarProdutos;
+// CRIAR
+export const criar = (produto) => api.post("/produtos", produto);
+export const criarProduto = criar;
+
+// ATUALIZAR
+export const atualizar = (id, produto) =>
+  api.put(`/produtos/${id}`, produto);
+export const atualizarProduto = atualizar;
+
+// DELETAR
+export const deletar = (id) => api.delete(`/produtos/${id}`);
+export const deletarProduto = deletar;
