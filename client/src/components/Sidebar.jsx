@@ -14,10 +14,12 @@ import {
   FaArrowUp,
   FaClipboardList,
 } from "react-icons/fa";
+import { useAuth } from "../contexts/AuthContext";
 
 const Sidebar = ({ isOpen }) => {
   const [openProdutos, setOpenProdutos] = useState(false);
   const [openMovimentacoes, setOpenMovimentacoes] = useState(false);
+  const { usuario } = useAuth();
 
   const linkBaseClass =
     "flex items-center p-2 rounded hover:bg-gray-800 transition-colors";
@@ -150,15 +152,17 @@ const Sidebar = ({ isOpen }) => {
           )}
         </div>
 
-        {/*  Usuários  */}
-        <NavLink
-          to="/usuarios"
-          className={({ isActive }) =>
-            `${linkBaseClass} ${isActive ? activeClass : ""}`
-          }
-        >
-          <FaUsers className="mr-2" /> Usuários
-        </NavLink>
+        {/*  Usuários (apenas admin)  */}
+        {usuario?.perfil === "admin" && (
+          <NavLink
+            to="/usuarios"
+            className={({ isActive }) =>
+              `${linkBaseClass} ${isActive ? activeClass : ""}`
+            }
+          >
+            <FaUsers className="mr-2" /> Usuários (Admin)
+          </NavLink>
+        )}
       </nav>
     </aside>
   );

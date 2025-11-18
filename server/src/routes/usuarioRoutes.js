@@ -1,11 +1,18 @@
-const { Router } = require("express");
+// src/routes/usuarioRoutes.js
+const express = require("express");
 const usuarioController = require("../controllers/usuarioController");
+const authMiddleware = require("../middlewares/authMiddleware");
+const adminMiddleware = require("../middlewares/adminMiddleware");
 
-const router = Router();
+const router = express.Router();
 
-// Rotas de autenticação e perfil de usuário
-router.post("/register", usuarioController.register);
-router.post("/login", usuarioController.login);
-router.get("/profile", usuarioController.profile);
+// todas as rotas de usuário exigem estar logado E ser admin
+router.use(authMiddleware);
+router.use(adminMiddleware);
+
+router.get("/", usuarioController.list);
+router.post("/", usuarioController.create);
+router.put("/:id", usuarioController.update);
+router.delete("/:id", usuarioController.remove);
 
 module.exports = router;

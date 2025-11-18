@@ -10,6 +10,7 @@ import EntradasPage from "./pages/EntradasPage";
 import SaidasPage from "./pages/SaidasPage";
 import InventarioPage from "./pages/InventarioPage";
 import InventarioDetalhePage from "./pages/InventarioDetalhePage";
+import UsuariosPage from "./pages/UsuariosPage";
 
 import LoginPage from "./pages/LoginPage";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="saidas" element={<SaidasPage />} />
               <Route path="inventario" element={<InventarioPage />} />
               <Route path="inventario/:id" element={<InventarioDetalhePage />} />
+              <Route path="usuarios" element={<UsuariosPage />} />
             </Route>
           </Routes>
         </Router>

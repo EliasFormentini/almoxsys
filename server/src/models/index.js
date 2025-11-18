@@ -9,6 +9,8 @@ const Pedido = require("./pedido")(sequelize);
 const ItemPedido = require("./ItemPedido")(sequelize);
 const Movimentacao = require("./movimentacao")(sequelize);
 const Fornecedor = require("./fornecedor")(sequelize);
+const DeckPermissao = require("./deckPermissao")(sequelize);
+const UsuarioDeck = require("./usuarioDeck")(sequelize);
 
 // 👇 novos models corretos
 const Inventario = require("./Inventario")(sequelize);
@@ -54,10 +56,6 @@ Pedido.hasMany(Movimentacao, { foreignKey: "id_pedido", as: "movimentacoes" });
 Movimentacao.belongsTo(Fornecedor, { foreignKey: "id_fornecedor", as: "fornecedor" });
 Fornecedor.hasMany(Movimentacao, { foreignKey: "id_fornecedor", as: "movimentacoes" });
 
-// ========================
-// Inventário (cabeçalho + itens)
-// ========================
-
 // Inventario x InventarioProduto
 Inventario.hasMany(InventarioProduto, {
   as: "itens",
@@ -78,7 +76,21 @@ Produto.hasMany(InventarioProduto, {
   foreignKey: "id_produto",
 });
 
-// ========================
+// Decks de permissão <-> Usuários (muitos-para-muitos)
+Usuario.belongsToMany(DeckPermissao, {
+  through: UsuarioDeck,
+  foreignKey: "id_usuario",
+  otherKey: "id_deck",
+  as: "decks",
+});
+
+DeckPermissao.belongsToMany(Usuario, {
+  through: UsuarioDeck,
+  foreignKey: "id_deck",
+  otherKey: "id_usuario",
+  as: "usuarios",
+});
+
 
 module.exports = {
   sequelize,
@@ -92,4 +104,6 @@ module.exports = {
   Fornecedor,
   Inventario,
   InventarioProduto,
+  DeckPermissao,
+  UsuarioDeck,
 };

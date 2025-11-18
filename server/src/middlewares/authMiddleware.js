@@ -1,17 +1,42 @@
-const jwt = require("jsonwebtoken");
+const { Usuario } = require("../models");
 
-function authMiddleware(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; 
+module.exports = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!token) return res.status(401).json({ error: "Token não fornecido" });
+    if (!authHeader) {
+      return res.status(401).json({ error: "Não autenticado." });
+    }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: "Token inválido" });
+    const [scheme, token] = authHeader.split(" ");
 
-    req.user = user;
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({ error: "Token inválido." });
+    }
+
+    // aqui usamos o FAKE TOKEN do authController: "fake-token-<id>"
+    if (!token.startsWith("fake-token-")) {
+      return res.status(401).json({ error: "Token inválido." });
+    }
+
+    const idStr = token.replace("fake-token-", "");
+    const userId = Number(idStr);
+
+    if (!userId) {
+      return res.status(401).json({ error: "Token inválido." });
+    }
+
+    const usuario = await Usuario.findByPk(userId);
+
+    if (!usuario) {
+      return res.status(401).json({ error: "Usuário não encontrado." });
+    }
+
+    // deixa o usuário disponível para o resto da requisição
+    req.user = usuario;
     next();
-  });
-}
-
-module.exports = authMiddleware;
+  } catch (err) {
+    console.error("Erro no authMiddleware:", err);
+    return res.status(500).json({ error: "Erro na autenticação." });
+  }
+};
