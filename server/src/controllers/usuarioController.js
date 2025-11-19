@@ -1,5 +1,5 @@
 // src/controllers/usuarioController.js
-const { Usuario, DeckPermissao } = require("../models");
+const { Usuario } = require("../models");
 const bcrypt = require("bcryptjs");
 
 const usuarioController = {
@@ -7,15 +7,8 @@ const usuarioController = {
   async list(req, res) {
     try {
       const usuarios = await Usuario.findAll({
-        attributes: ["id", "nome", "email", "perfil"],
-        include: [
-          {
-            model: DeckPermissao,
-            as: "decks",
-            attributes: ["id", "nome"],
-            through: { attributes: [] },
-          },
-        ],
+        attributes: ["id", "nome", "email", "perfil", "permissoes"],
+        order: [["id", "ASC"]],
       });
 
       return res.json(usuarios);
@@ -30,7 +23,7 @@ const usuarioController = {
   // POST /api/usuarios
   async create(req, res) {
     try {
-      const { nome, email, senha, perfil = "usuario" } = req.body;
+      const { nome, email, senha, perfil } = req.body;
 
       if (!nome || !email || !senha) {
         return res
@@ -38,18 +31,25 @@ const usuarioController = {
           .json({ error: "Nome, e-mail e senha são obrigatórios." });
       }
 
-      const jaExiste = await Usuario.findOne({ where: { email } });
-      if (jaExiste) {
-        return res.status(400).json({ error: "E-mail já cadastrado." });
+      const usuarioExistente = await Usuario.findOne({ where: { email } });
+
+      if (usuarioExistente) {
+        return res
+          .status(400)
+          .json({ error: "Já existe um usuário cadastrado com este e-mail." });
       }
 
-      const hash = await bcrypt.hash(senha, 10);
+      // perfil padrão "user" se nada for enviado
+      const perfilFinal = perfil || "user";
+
+      const senhaHash = await bcrypt.hash(senha, 10);
 
       const novo = await Usuario.create({
         nome,
         email,
-        senha: hash,
-        perfil,
+        senha: senhaHash,
+        perfil: perfilFinal,
+        permissoes: [], // inicia sem decks
       });
 
       return res.status(201).json({
@@ -57,6 +57,7 @@ const usuarioController = {
         nome: novo.nome,
         email: novo.email,
         perfil: novo.perfil,
+        permissoes: novo.permissoes || [],
       });
     } catch (err) {
       console.error("Erro ao criar usuário:", err);
@@ -70,17 +71,20 @@ const usuarioController = {
   async update(req, res) {
     try {
       const { id } = req.params;
-      const { nome, email, senha, perfil } = req.body;
+      const { nome, email, perfil, senha } = req.body;
 
       const usuario = await Usuario.findByPk(id);
+
       if (!usuario) {
         return res.status(404).json({ error: "Usuário não encontrado." });
       }
 
       if (email && email !== usuario.email) {
-        const existeEmail = await Usuario.findOne({ where: { email } });
-        if (existeEmail) {
-          return res.status(400).json({ error: "E-mail já cadastrado." });
+        const emailJaExiste = await Usuario.findOne({ where: { email } });
+        if (emailJaExiste) {
+          return res
+            .status(400)
+            .json({ error: "Já existe outro usuário com este e-mail." });
         }
       }
 
@@ -89,8 +93,8 @@ const usuarioController = {
       if (perfil) usuario.perfil = perfil;
 
       if (senha) {
-        const hash = await bcrypt.hash(senha, 10);
-        usuario.senha = hash;
+        const senhaHash = await bcrypt.hash(senha, 10);
+        usuario.senha = senhaHash;
       }
 
       await usuario.save();
@@ -100,6 +104,7 @@ const usuarioController = {
         nome: usuario.nome,
         email: usuario.email,
         perfil: usuario.perfil,
+        permissoes: usuario.permissoes || [],
       });
     } catch (err) {
       console.error("Erro ao atualizar usuário:", err);
@@ -115,15 +120,9 @@ const usuarioController = {
       const { id } = req.params;
 
       const usuario = await Usuario.findByPk(id);
+
       if (!usuario) {
         return res.status(404).json({ error: "Usuário não encontrado." });
-      }
-
-      // impede que o admin delete ele mesmo (opcional)
-      if (req.usuario && req.usuario.id === usuario.id) {
-        return res
-          .status(400)
-          .json({ error: "Você não pode excluir o próprio usuário logado." });
       }
 
       await usuario.destroy();
@@ -137,72 +136,36 @@ const usuarioController = {
     }
   },
 
-  // GET /api/usuarios/:id/decks  -> lista decks do usuário
-  async listDecks(req, res) {
+  // PUT /api/usuarios/:id/decks
+  // body: { decks: ["produtos", "fornecedores", ...] }
+  async definirDecks(req, res) {
     try {
       const { id } = req.params;
+      const { decks } = req.body;
 
-      const usuario = await Usuario.findByPk(id, {
-        attributes: ["id", "nome", "email"],
-        include: [
-          {
-            model: DeckPermissao,
-            as: "decks",
-            attributes: ["id", "nome", "descricao"],
-            through: { attributes: [] },
-          },
-        ],
-      });
-
-      if (!usuario) {
-        return res.status(404).json({ error: "Usuário não encontrado." });
+      if (!Array.isArray(decks)) {
+        return res
+          .status(400)
+          .json({ error: "Formato inválido de decks. Esperado array de strings." });
       }
-
-      return res.json(usuario);
-    } catch (err) {
-      console.error("Erro ao listar decks do usuário:", err);
-      return res.status(500).json({
-        error: "Erro ao listar decks do usuário.",
-        details: err.message,
-      });
-    }
-  },
-
-  // POST /api/usuarios/:id/decks  -> define/atualiza decks do usuário
-  // body: { deckIds: [1,2,3] }
-  async setDecks(req, res) {
-    try {
-      const { id } = req.params;
-      const { deckIds = [] } = req.body;
 
       const usuario = await Usuario.findByPk(id);
+
       if (!usuario) {
         return res.status(404).json({ error: "Usuário não encontrado." });
       }
 
-      const decks = await DeckPermissao.findAll({
-        where: { id: deckIds },
+      usuario.permissoes = decks;
+      await usuario.save();
+
+      return res.json({
+        message: "Permissões atualizadas com sucesso.",
+        permissoes: usuario.permissoes || [],
       });
-
-      await usuario.setDecks(decks);
-
-      const usuarioAtualizado = await Usuario.findByPk(id, {
-        attributes: ["id", "nome", "email"],
-        include: [
-          {
-            model: DeckPermissao,
-            as: "decks",
-            attributes: ["id", "nome", "descricao"],
-            through: { attributes: [] },
-          },
-        ],
-      });
-
-      return res.json(usuarioAtualizado);
     } catch (err) {
-      console.error("Erro ao atualizar decks do usuário:", err);
+      console.error("Erro ao definir decks do usuário:", err);
       return res.status(500).json({
-        error: "Erro ao atualizar decks do usuário.",
+        error: "Erro ao definir permissões do usuário.",
         details: err.message,
       });
     }

@@ -6,9 +6,14 @@ module.exports = (sequelize) => {
     nome: { type: DataTypes.STRING, allowNull: false },
     email: { type: DataTypes.STRING, allowNull: false, unique: true },
     senha: { type: DataTypes.STRING, allowNull: false },
-    perfil: { 
-      type: DataTypes.ENUM("administrador", "almoxarife", "funcionario"), 
-      allowNull: false 
+    perfil: {
+      type: DataTypes.ENUM("administrador", "almoxarife", "funcionario"),
+      allowNull: false
+    },
+    permissoes: {
+      type: DataTypes.JSON,  
+      allowNull: true,
+      defaultValue: null,
     },
   }, {
     tableName: "Usuarios",

@@ -38,9 +38,20 @@ export const useAlert = () => {
       });
     });
 
+  // 🔹 Helpers compatíveis com o que o UsuariosPage espera
+  const showError = (message) =>
+    alert({ title: "Erro", message, type: "error" });
+
+  const showSuccess = (message) =>
+    alert({ title: "Sucesso", message, type: "success" });
+
+  const showConfirm = (message, title = "Confirmação") =>
+    confirm({ title, message, type: "warning" });
+
+  // componente que renderiza o modal
   const AlertComponent = options ? (
     <AlertDialog {...options} isOpen={options.isOpen} />
   ) : null;
 
-  return { alert, confirm, AlertComponent };
+  return { alert, confirm, showError, showSuccess, showConfirm, AlertComponent };
 };

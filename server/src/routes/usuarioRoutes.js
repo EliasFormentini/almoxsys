@@ -14,5 +14,6 @@ router.get("/", usuarioController.list);
 router.post("/", usuarioController.create);
 router.put("/:id", usuarioController.update);
 router.delete("/:id", usuarioController.remove);
+router.put("/:id/decks", usuarioController.definirDecks);
 
 module.exports = router;

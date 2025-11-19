@@ -3,8 +3,12 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ error: "Não autenticado." });
   }
 
-  if (req.user.perfil !== "admin") {
-    return res.status(403).json({ error: "Apenas administradores podem acessar esta rota." });
+  const perfil = req.user.perfil;
+
+  if (perfil !== "admin" && perfil !== "administrador") {
+    return res
+      .status(403)
+      .json({ error: "Apenas administradores podem acessar esta rota." });
   }
 
   next();

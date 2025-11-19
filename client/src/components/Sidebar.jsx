@@ -153,14 +153,14 @@ const Sidebar = ({ isOpen }) => {
         </div>
 
         {/*  Usuários (apenas admin)  */}
-        {usuario?.perfil === "admin" && (
+        {usuario?.perfil === "administrador" && (
           <NavLink
             to="/usuarios"
             className={({ isActive }) =>
               `${linkBaseClass} ${isActive ? activeClass : ""}`
             }
           >
-            <FaUsers className="mr-2" /> Usuários (Admin)
+            <FaUsers className="mr-2" /> Usuários 
           </NavLink>
         )}
       </nav>

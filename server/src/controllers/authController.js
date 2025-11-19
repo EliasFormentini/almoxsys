@@ -1,3 +1,4 @@
+// src/controllers/authController.js
 const { Usuario } = require("../models");
 const bcrypt = require("bcryptjs");
 
@@ -32,6 +33,7 @@ const authController = {
           id: usuario.id,
           nome: usuario.nome,
           email: usuario.email,
+          perfil: usuario.perfil, // 🔴 IMPORTANTE
         },
       });
     } catch (err) {
