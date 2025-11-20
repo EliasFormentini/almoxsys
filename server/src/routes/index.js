@@ -10,6 +10,8 @@ const fornecedorRoutes = require("./fornecedorRoutes");
 const movimentacaoRoutes = require("./movimentacaoRoutes");
 const inventarioRoutes = require("./inventarioRoutes");
 const deckPermissaoRoutes = require("./deckPermissaoRoutes");
+const relatorioRoutes = require("./relatorioRoutes"); 
+const pedidoRoutes = require("./pedidoRoutes"); 
 
 // ROTAS DE AUTENTICAÇÃO
 router.use("/auth", authRoutes);
@@ -23,5 +25,7 @@ router.use("/inventario", inventarioRoutes);
 router.use("/auth", authRoutes);
 router.use("/usuarios", usuarioRoutes);
 router.use("/decks-permissao", deckPermissaoRoutes);
+router.use("/relatorios", relatorioRoutes);
+router.use("/pedidos", pedidoRoutes); 
 
 module.exports = router;

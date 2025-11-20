@@ -1,21 +1,33 @@
 const { Pedido, ItemPedido, Produto, Movimentacao, Usuario } = require("../models");
 
 const pedidoController = {
-  // Listar todos os pedidos (filtrável por tipo)
   async list(req, res) {
     try {
       const { tipo } = req.query;
       const where = tipo ? { tipo } : {};
+
       const pedidos = await Pedido.findAll({
         where,
+        order: [["id", "DESC"]],
         include: [
-          { model: Usuario, attributes: ["id", "nome", "email", "perfil"] },
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["id", "nome", "email", "perfil"],
+          },
           {
             model: ItemPedido,
-            include: [Produto],
+            as: "itens",
+            include: [
+              {
+                model: Produto,
+                as: "produto",
+              },
+            ],
           },
         ],
       });
+
       res.json(pedidos);
     } catch (err) {
       console.error(err);
@@ -23,45 +35,116 @@ const pedidoController = {
     }
   },
 
-  // Criar pedido
+
   async create(req, res) {
     try {
-      const { tipo, items } = req.body;
+      const { tipo, items } = req.body; 
+
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: "Usuário não autenticado." });
+      }
+
       const id_usuario = req.user.id;
+      if (!tipo) {
+        return res.status(400).json({ error: "Tipo do pedido é obrigatório." });
+      }
 
-      const pedido = await Pedido.create({ tipo, id_usuario });
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "É necessário informar ao menos um item no pedido." });
+      }
 
-      // Criar itens do pedido
-      for (const item of items) {
+      const itensPreparados = items.map((item) => {
+        const quantidade = Number(item.quantidade || 0);
+        const valor_unitario = Number(
+          (item.valor_unitario ?? 0).toString().replace(",", ".")
+        );
+        const valor_total = quantidade * valor_unitario;
+
+        return {
+          id_produto: item.id_produto,
+          quantidade,
+          valor_unitario,
+          valor_total,
+        };
+      });
+
+      const valor_total_pedido = itensPreparados.reduce(
+        (acc, item) => acc + item.valor_total,
+        0
+      );
+
+      const pedido = await Pedido.create({
+        tipo,
+        id_usuario,
+        valor_total: valor_total_pedido,
+      });
+
+      for (const item of itensPreparados) {
         await ItemPedido.create({
           id_pedido: pedido.id,
           id_produto: item.id_produto,
           quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
         });
       }
 
-      res.status(201).json({ message: "Pedido criado com sucesso", pedido_id: pedido.id });
+      const pedidoCompleto = await Pedido.findByPk(pedido.id, {
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["id", "nome", "email", "perfil"],
+          },
+          {
+            model: ItemPedido,
+            as: "itens",
+            include: [
+              {
+                model: Produto,
+                as: "produto",
+              },
+            ],
+          },
+        ],
+      });
+
+      return res.status(201).json(pedidoCompleto);
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Erro ao criar pedido" });
     }
   },
 
-  // Aprovar/Rejeitar pedido
   async updateStatus(req, res) {
     try {
       const { id } = req.params;
       const { status } = req.body;
 
-      const pedido = await Pedido.findByPk(id, { include: [ItemPedido] });
-      if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
+      if (!status) {
+        return res.status(400).json({ error: "Status é obrigatório." });
+      }
+
+      const pedido = await Pedido.findByPk(id, {
+        include: [
+          {
+            model: ItemPedido,
+            as: "itens",
+          },
+        ],
+      });
+
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido não encontrado" });
+      }
 
       pedido.status = status;
       await pedido.save();
 
-      // Se for aprovação e tipo "retirada", gerar movimentação de saída
       if (status === "aprovado" && pedido.tipo === "retirada") {
-        for (const item of pedido.ItemPedidos) {
+        for (const item of pedido.itens) {
           await Movimentacao.create({
             tipo: "saida",
             id_produto: item.id_produto,
@@ -70,10 +153,11 @@ const pedidoController = {
             quantidade: item.quantidade,
           });
 
-          // Atualizar estoque
           const produto = await Produto.findByPk(item.id_produto);
-          produto.estoque_atual -= item.quantidade;
-          await produto.save();
+          if (produto) {
+            produto.estoque_atual -= item.quantidade;
+            await produto.save();
+          }
         }
       }
 
@@ -84,17 +168,34 @@ const pedidoController = {
     }
   },
 
-
   async getById(req, res) {
     try {
       const { id } = req.params;
+
       const pedido = await Pedido.findByPk(id, {
         include: [
-          { model: Usuario, attributes: ["id", "nome"] },
-          { model: ItemPedido, include: [Produto] },
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["id", "nome", "email", "perfil"],
+          },
+          {
+            model: ItemPedido,
+            as: "itens",
+            include: [
+              {
+                model: Produto,
+                as: "produto",
+              },
+            ],
+          },
         ],
       });
-      if (!pedido) return res.status(404).json({ error: "Pedido não encontrado" });
+
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido não encontrado" });
+      }
+
       res.json(pedido);
     } catch (err) {
       console.error(err);

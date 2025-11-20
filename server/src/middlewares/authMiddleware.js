@@ -14,7 +14,6 @@ module.exports = async (req, res, next) => {
       return res.status(401).json({ error: "Token inválido." });
     }
 
-    // aqui usamos o FAKE TOKEN do authController: "fake-token-<id>"
     if (!token.startsWith("fake-token-")) {
       return res.status(401).json({ error: "Token inválido." });
     }
@@ -26,13 +25,12 @@ module.exports = async (req, res, next) => {
       return res.status(401).json({ error: "Token inválido." });
     }
 
-    const usuario = await Usuario.findByPk(userId);
+    const usuario = await Usuario.findByPk(userId); 
 
     if (!usuario) {
       return res.status(401).json({ error: "Usuário não encontrado." });
     }
 
-    // deixa o usuário disponível para o resto da requisição
     req.user = usuario;
     next();
   } catch (err) {

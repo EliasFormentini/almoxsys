@@ -5,6 +5,8 @@ import ProdutoModal from "../components/ProdutoModal";
 import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
 import { useAlert } from "../hooks/useAlert";
 import { useToast } from "../contexts/ToastContext";
+import { baixarRelatorioEstoque } from "../services/relatorioService";
+
 
 const ProdutosPage = () => {
   // --------- ESTADO BASE ---------
@@ -194,12 +196,22 @@ const ProdutosPage = () => {
       {/* Cabeçalho */}
       <div className="flex justify-between items-center mb-6 border-b pb-2">
         <h1 className="text-2xl font-semibold text-gray-800">Produtos</h1>
-        <button
-          onClick={handleNovo}
-          className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
-        >
-          Novo
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={baixarRelatorioEstoque}
+            className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium shadow-sm text-sm"
+          >
+            Imprimir PDF
+          </button>
+
+          <button
+            onClick={handleNovo}
+            className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+          >
+            Novo
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -274,20 +286,18 @@ const ProdutosPage = () => {
               sorted.map((p) => (
                 <tr
                   key={p.id}
-                  className={`hover:bg-gray-50 transition-colors ${
-                    p.status === "I" ? "opacity-60" : ""
-                  }`}
+                  className={`hover:bg-gray-50 transition-colors ${p.status === "I" ? "opacity-60" : ""
+                    }`}
                 >
                   <td className="px-4 py-2 border-b">{p.id}</td>
                   <td className="px-4 py-2 border-b">{p.nome}</td>
                   <td className="px-4 py-2 border-b">{p.categoria?.nome || "-"}</td>
                   <td className="px-4 py-2 border-b">{p.unidade?.sigla || "-"}</td>
                   <td
-                    className={`px-4 py-2 border-b ${
-                      Number(p.estoque_atual) < Number(p.estoque_minimo)
+                    className={`px-4 py-2 border-b ${Number(p.estoque_atual) < Number(p.estoque_minimo)
                         ? "text-red-600 font-semibold"
                         : "text-blue-700 font-medium"
-                    }`}
+                      }`}
                   >
                     {Number(p.estoque_atual) || 0}
                   </td>
@@ -348,9 +358,8 @@ const Th = ({ label, onSort, active }) => (
     <button
       type="button"
       onClick={onSort}
-      className={`inline-flex items-center gap-1 font-medium ${
-        active ? "text-blue-700" : "text-gray-700"
-      }`}
+      className={`inline-flex items-center gap-1 font-medium ${active ? "text-blue-700" : "text-gray-700"
+        }`}
       title="Ordenar"
     >
       {label}

@@ -15,8 +15,8 @@ export const DECKS_FIXOS = [
     descricao: "Acesso a Entradas, Saídas e Inventário.",
   },
   {
-    key: "relatorios",
-    nome: "Relatórios",
-    descricao: "Acesso aos relatórios (quando disponíveis).",
+    key: "pedidos",
+    nome: "Pedidos",
+    descricao: "Acesso aos pedidos de compra.",
   },
 ];

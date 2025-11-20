@@ -1,8 +1,11 @@
 const { Router } = require("express");
 const produtoController = require("../controllers/produtoController");
+const authMiddleware = require("../middlewares/authMiddleware");
+const permission = require("../middlewares/permissionMiddleware");
 
 const router = Router();
-
+router.use(authMiddleware);
+router.use(permission("PRODUTOS"));
 
 // CRUD de produtos
 router.get("/", produtoController.list);

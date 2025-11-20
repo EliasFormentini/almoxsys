@@ -1,161 +1,354 @@
-const ExcelJS = require("exceljs");
+// src/controllers/relatorioController.js
 const PDFDocument = require("pdfkit");
-const { Produto, Movimentacao, Categoria, Unidade } = require("../models");
 const { Op } = require("sequelize");
+const { Produto, Categoria, Unidade, Movimentacao, Fornecedor, Usuario } = require("../models");
 
-const relatorioController = {
-  // Relatório de entradas e saídas por período
-  async movimentacoesPorPeriodo(req, res) {
-    try {
-      const { data_inicio, data_fim, formato } = req.query;
-
-      if (!data_inicio || !data_fim)
-        return res.status(400).json({ error: "Informe data_inicio e data_fim" });
-
-      const movimentacoes = await Movimentacao.findAll({
-        where: {
-          data_movimentacao: {
-            [Op.between]: [new Date(data_inicio), new Date(data_fim)],
-          },
-        },
-        include: [
-          { model: Produto, attributes: ["nome"] },
-        ],
-        order: [["data_movimentacao", "ASC"]],
-      });
-
-      if (formato === "excel") {
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Movimentacoes");
-
-        sheet.columns = [
-          { header: "ID", key: "id", width: 10 },
-          { header: "Produto", key: "produto", width: 30 },
-          { header: "Tipo", key: "tipo", width: 15 },
-          { header: "Quantidade", key: "quantidade", width: 15 },
-          { header: "Data", key: "data", width: 20 },
-        ];
-
-        movimentacoes.forEach((mov) => {
-          sheet.addRow({
-            id: mov.id,
-            produto: mov.Produto.nome,
-            tipo: mov.tipo,
-            quantidade: mov.quantidade,
-            data: mov.data_movimentacao.toISOString().split("T")[0],
-          });
-        });
-
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="movimentacoes.xlsx"`
-        );
-        res.setHeader(
-          "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
-
-        await workbook.xlsx.write(res);
-        res.end();
-      } else {
-        // PDF
-        const doc = new PDFDocument();
-        res.setHeader("Content-Disposition", "attachment; filename=movimentacoes.pdf");
-        res.setHeader("Content-Type", "application/pdf");
-
-        doc.fontSize(16).text("Relatório de Movimentações", { align: "center" });
-        doc.moveDown();
-
-        movimentacoes.forEach((mov) => {
-          doc
-            .fontSize(12)
-            .text(
-              `ID: ${mov.id} | Produto: ${mov.Produto.nome} | Tipo: ${mov.tipo} | Quantidade: ${mov.quantidade} | Data: ${mov.data_movimentacao.toISOString().split("T")[0]}`
-            );
-        });
-
-        doc.pipe(res);
-        doc.end();
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Erro ao gerar relatório" });
-    }
-  },
-
-  // Relatório de estoque atual
-  async estoqueAtual(req, res) {
-    try {
-      const { formato } = req.query;
-
-      const produtos = await Produto.findAll({
-        include: [
-          { model: Categoria, attributes: ["nome"] },
-          { model: Unidade, attributes: ["sigla"] },
-        ],
-        order: [["nome", "ASC"]],
-      });
-
-      if (formato === "excel") {
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("Estoque");
-
-        sheet.columns = [
-          { header: "ID", key: "id", width: 10 },
-          { header: "Produto", key: "nome", width: 30 },
-          { header: "Categoria", key: "categoria", width: 20 },
-          { header: "Unidade", key: "unidade", width: 10 },
-          { header: "Estoque Atual", key: "estoque", width: 15 },
-          { header: "Estoque Mínimo", key: "minimo", width: 15 },
-        ];
-
-        produtos.forEach((p) => {
-          sheet.addRow({
-            id: p.id,
-            nome: p.nome,
-            categoria: p.Categoria.nome,
-            unidade: p.Unidade.sigla,
-            estoque: p.estoque_atual,
-            minimo: p.estoque_minimo,
-          });
-        });
-
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="estoque_atual.xlsx"`
-        );
-        res.setHeader(
-          "Content-Type",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
-
-        await workbook.xlsx.write(res);
-        res.end();
-      } else {
-        // PDF
-        const doc = new PDFDocument();
-        res.setHeader("Content-Disposition", "attachment; filename=estoque_atual.pdf");
-        res.setHeader("Content-Type", "application/pdf");
-
-        doc.fontSize(16).text("Relatório de Estoque Atual", { align: "center" });
-        doc.moveDown();
-
-        produtos.forEach((p) => {
-          doc
-            .fontSize(12)
-            .text(
-              `ID: ${p.id} | Produto: ${p.nome} | Categoria: ${p.Categoria.nome} | Unidade: ${p.Unidade.sigla} | Estoque Atual: ${p.estoque_atual} | Estoque Mínimo: ${p.estoque_minimo}`
-            );
-        });
-
-        doc.pipe(res);
-        doc.end();
-      }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Erro ao gerar relatório de estoque" });
-    }
-  },
+// helper para formatar datas no PDF
+const formatDate = (d) => {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("pt-BR");
 };
 
-module.exports = relatorioController;
+// ====================
+// RELATÓRIO: ESTOQUE ATUAL
+// ====================
+async function estoqueAtual(req, res) {
+  try {
+    const produtos = await Produto.findAll({
+      include: [
+        { model: Categoria, as: "categoria" },
+        { model: Unidade, as: "unidade" },
+      ],
+      order: [["nome", "ASC"]],
+    });
+
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'inline; filename="relatorio-estoque-atual.pdf"'
+    );
+
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc
+      .fontSize(18)
+      .text("Relatório de Estoque Atual", { align: "center" });
+    doc.moveDown(0.5);
+    doc
+      .fontSize(10)
+      .text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, {
+        align: "center",
+      });
+
+    doc.moveDown(1);
+
+    // Cabeçalho da tabela
+    const tableTop = 130;
+
+    doc.fontSize(10).font("Helvetica-Bold");
+    doc.text("Cód", 40, tableTop);
+    doc.text("Produto", 80, tableTop);
+    doc.text("Categoria", 230, tableTop);
+    doc.text("Un.", 380, tableTop);
+    doc.text("Estoque", 420, tableTop, { width: 60, align: "right" });
+    doc.text("Mínimo", 480, tableTop, { width: 60, align: "right" });
+
+    doc
+      .moveTo(40, tableTop + 15)
+      .lineTo(540, tableTop + 15)
+      .stroke();
+
+    // Linhas
+    let y = tableTop + 25;
+    doc.font("Helvetica").fontSize(9);
+
+    const linhaHeight = 18;
+    const pageBottom = 780;
+
+    produtos.forEach((p) => {
+      if (y > pageBottom) {
+        doc.addPage();
+        y = 40;
+      }
+
+      const estoque = Number(p.estoque_atual || 0);
+      const minimo = Number(p.estoque_minimo || 0);
+
+      doc.text(p.id, 40, y);
+      doc.text(p.nome || "", 80, y, { width: 140 });
+      doc.text(p.categoria?.nome || "-", 230, y, { width: 140 });
+      doc.text(p.unidade?.sigla || "-", 380, y);
+
+      doc.text(estoque.toString(), 420, y, {
+        width: 60,
+        align: "right",
+      });
+      doc.text(minimo.toString(), 480, y, {
+        width: 60,
+        align: "right",
+      });
+
+      y += linhaHeight;
+    });
+
+    doc.end();
+  } catch (err) {
+    console.error("Erro ao gerar relatório de estoque:", err);
+    return res
+      .status(500)
+      .json({ error: "Erro ao gerar relatório de estoque." });
+  }
+}
+
+// ====================
+// RELATÓRIO: ENTRADAS POR PERÍODO
+// ====================
+async function entradasPeriodo(req, res) {
+  try {
+    let { dataInicio, dataFim } = req.query;
+
+    if (!dataInicio || !dataFim) {
+      return res
+        .status(400)
+        .json({ error: "Informe dataInicio e dataFim (YYYY-MM-DD)." });
+    }
+
+    // garante formato Date
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
+    fim.setHours(23, 59, 59, 999);
+
+    const entradas = await Movimentacao.findAll({
+      where: {
+        tipo: "entrada",
+        data_movimentacao: {
+          [Op.between]: [inicio, fim],
+        },
+      },
+      include: [
+        { model: Produto, as: "produto", include: [{ model: Unidade, as: "unidade" }] },
+        { model: Fornecedor, as: "fornecedor" },
+        { model: Usuario, as: "usuario" },
+      ],
+      order: [["data_movimentacao", "ASC"]],
+    });
+
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'inline; filename="relatorio-entradas-periodo.pdf"'
+    );
+
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc
+      .fontSize(16)
+      .text("Relatório de Entradas", { align: "center" });
+    doc.moveDown(0.5);
+    doc
+      .fontSize(10)
+      .text(
+        `Período: ${formatDate(inicio)} até ${formatDate(fim)} · Gerado em: ${new Date().toLocaleString(
+          "pt-BR"
+        )}`,
+        { align: "center" }
+      );
+
+    doc.moveDown(1);
+
+    // Cabeçalho da tabela
+    const tableTop = 130;
+    doc.fontSize(9).font("Helvetica-Bold");
+    doc.text("Data", 40, tableTop);
+    doc.text("Produto", 90, tableTop);
+    doc.text("Qtd", 260, tableTop, { width: 40, align: "right" });
+    doc.text("Un.", 305, tableTop);
+    doc.text("Vlr Unit", 340, tableTop, { width: 70, align: "right" });
+    doc.text("Total", 415, tableTop, { width: 70, align: "right" });
+    doc.text("Fornecedor", 490, tableTop, { width: 100 });
+
+    doc
+      .moveTo(40, tableTop + 14)
+      .lineTo(540, tableTop + 14)
+      .stroke();
+
+    let y = tableTop + 22;
+    const linhaHeight = 16;
+    const pageBottom = 780;
+
+    doc.font("Helvetica").fontSize(9);
+
+    let totalGeral = 0;
+
+    entradas.forEach((m) => {
+      if (y > pageBottom) {
+        doc.addPage();
+        y = 40;
+      }
+
+      const qtd = Number(m.quantidade || 0);
+      const vlrUnit = Number(m.valor_unitario || 0);
+      const total = qtd * vlrUnit;
+      totalGeral += total;
+
+      doc.text(formatDate(m.data_movimentacao), 40, y);
+      doc.text(m.produto?.nome || "-", 90, y, { width: 160 });
+      doc.text(qtd.toString(), 260, y, { width: 40, align: "right" });
+      doc.text(m.produto?.unidade?.sigla || "-", 305, y);
+      doc.text(vlrUnit.toFixed(2), 340, y, { width: 70, align: "right" });
+      doc.text(total.toFixed(2), 415, y, { width: 70, align: "right" });
+      doc.text(m.fornecedor?.nome || "-", 490, y, { width: 100 });
+
+      y += linhaHeight;
+    });
+
+    // total geral
+    doc.moveDown(1.5);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(`Total geral do período: R$ ${totalGeral.toFixed(2)}`, {
+        align: "right",
+      });
+
+    doc.end();
+  } catch (err) {
+    console.error("Erro ao gerar relatório de entradas:", err);
+    return res
+      .status(500)
+      .json({ error: "Erro ao gerar relatório de entradas." });
+  }
+}
+
+// ====================
+// RELATÓRIO: SAÍDAS POR PERÍODO
+// ====================
+async function saiasPeriodo(req, res) {
+  try {
+    let { dataInicio, dataFim } = req.query;
+
+    if (!dataInicio || !dataFim) {
+      return res
+        .status(400)
+        .json({ error: "Informe dataInicio e dataFim (YYYY-MM-DD)." });
+    }
+
+    const inicio = new Date(dataInicio);
+    const fim = new Date(dataFim);
+    fim.setHours(23, 59, 59, 999);
+
+    const saidas = await Movimentacao.findAll({
+      where: {
+        tipo: "saida",
+        data_movimentacao: {
+          [Op.between]: [inicio, fim],
+        },
+      },
+      include: [
+        { model: Produto, as: "produto", include: [{ model: Unidade, as: "unidade" }] },
+        { model: Usuario, as: "usuario" },
+      ],
+      order: [["data_movimentacao", "ASC"]],
+    });
+
+    const doc = new PDFDocument({ size: "A4", margin: 40 });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      'inline; filename="relatorio-saidas-periodo.pdf"'
+    );
+
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc
+      .fontSize(16)
+      .text("Relatório de Saídas", { align: "center" });
+    doc.moveDown(0.5);
+    doc
+      .fontSize(10)
+      .text(
+        `Período: ${formatDate(inicio)} até ${formatDate(fim)} · Gerado em: ${new Date().toLocaleString(
+          "pt-BR"
+        )}`,
+        { align: "center" }
+      );
+
+    doc.moveDown(1);
+
+    // Cabeçalho da tabela
+    const tableTop = 130;
+    doc.fontSize(9).font("Helvetica-Bold");
+    doc.text("Data", 40, tableTop);
+    doc.text("Produto", 90, tableTop);
+    doc.text("Qtd", 260, tableTop, { width: 40, align: "right" });
+    doc.text("Un.", 305, tableTop);
+    doc.text("Vlr Unit", 340, tableTop, { width: 70, align: "right" });
+    doc.text("Total", 415, tableTop, { width: 70, align: "right" });
+    doc.text("Usuário", 490, tableTop, { width: 100 });
+
+    doc
+      .moveTo(40, tableTop + 14)
+      .lineTo(540, tableTop + 14)
+      .stroke();
+
+    let y = tableTop + 22;
+    const linhaHeight = 16;
+    const pageBottom = 780;
+
+    doc.font("Helvetica").fontSize(9);
+
+    let totalGeral = 0;
+
+    saidas.forEach((m) => {
+      if (y > pageBottom) {
+        doc.addPage();
+        y = 40;
+      }
+
+      const qtd = Number(m.quantidade || 0);
+      const vlrUnit = Number(m.valor_unitario || 0);
+      const total = qtd * vlrUnit;
+      totalGeral += total;
+
+      doc.text(formatDate(m.data_movimentacao), 40, y);
+      doc.text(m.produto?.nome || "-", 90, y, { width: 160 });
+      doc.text(qtd.toString(), 260, y, { width: 40, align: "right" });
+      doc.text(m.produto?.unidade?.sigla || "-", 305, y);
+      doc.text(vlrUnit.toFixed(2), 340, y, { width: 70, align: "right" });
+      doc.text(total.toFixed(2), 415, y, { width: 70, align: "right" });
+      doc.text(m.usuario?.nome || "-", 490, y, { width: 100 });
+
+      y += linhaHeight;
+    });
+
+    // total geral
+    doc.moveDown(1.5);
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(`Total geral do período: R$ ${totalGeral.toFixed(2)}`, {
+        align: "right",
+      });
+
+    doc.end();
+  } catch (err) {
+    console.error("Erro ao gerar relatório de saídas:", err);
+    return res
+      .status(500)
+      .json({ error: "Erro ao gerar relatório de saídas." });
+  }
+}
+
+module.exports = {
+  estoqueAtual,
+  entradasPeriodo,
+  saiasPeriodo, // sim, o nome está assim no export; na rota vamos usar essa função
+};

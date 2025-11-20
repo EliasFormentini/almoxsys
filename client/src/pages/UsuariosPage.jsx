@@ -8,7 +8,7 @@ import {
 } from "../services/usuarioService";
 import UsuarioModal from "../components/UsuarioModal";
 import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
-import { FaShieldAlt } from "react-icons/fa";
+import { FaLockOpen } from "react-icons/fa";
 import { useAlert } from "../hooks/useAlert";
 
 // ---- Decks fixos em código ----
@@ -369,10 +369,10 @@ const UsuariosPage = () => {
                       <td className="px-4 py-2 border-b text-center space-x-2">
                         <button
                           onClick={() => handleAbrirPermissoes(u)}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-sm"
+                          className="bg-blue-800 hover:bg-blue-900 text-white px-3 py-1 rounded text-sm"
                           title="Permissões"
                         >
-                          <FaShieldAlt size={14} />
+                          <FaLockOpen size={16} />
                         </button>
                         <button
                           onClick={() => handleEditar(u)}

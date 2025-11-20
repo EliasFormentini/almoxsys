@@ -33,7 +33,8 @@ const authController = {
           id: usuario.id,
           nome: usuario.nome,
           email: usuario.email,
-          perfil: usuario.perfil, // 🔴 IMPORTANTE
+          perfil: usuario.perfil,          // <-- importante
+          permissoes: usuario.permissoes,  // <-- importante (JSON/string/array)
         },
       });
     } catch (err) {

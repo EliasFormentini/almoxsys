@@ -4,11 +4,15 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import EntradaModal from "../components/EntradaModal";
 import { useAlert } from "../hooks/useAlert";
 import { useToast } from "../contexts/ToastContext";
+import { baixarRelatorioEntradasPeriodo } from "../services/relatorioService";
 
 const EntradasPage = () => {
   const [entradas, setEntradas] = useState([]);
   const [expandedId, setExpandedId] = useState(null);
   const [mostrarModal, setMostrarModal] = useState(false);
+
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
 
   const { alert, confirm, AlertComponent } = useAlert();
   const { showToast } = useToast();
@@ -40,15 +44,45 @@ const EntradasPage = () => {
     <>
       <div className="p-6 bg-gray-50 min-h-screen">
         {/* Cabeçalho */}
-        <div className="flex justify-between items-center mb-6 border-b pb-2">
-          <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
-          <button
-            className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
-            onClick={() => setMostrarModal(true)}
-          >
-            Nova Entrada
-          </button>
-        </div>
+       <div className="flex justify-between items-center mb-6 border-b pb-2">
+  <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
+
+  <div className="flex items-center gap-2">
+    <input
+      type="date"
+      value={dataInicio}
+      onChange={(e) => setDataInicio(e.target.value)}
+      className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+    />
+    <span className="text-gray-600 text-sm">até</span>
+    <input
+      type="date"
+      value={dataFim}
+      onChange={(e) => setDataFim(e.target.value)}
+      className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+    />
+
+    <button
+      className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+      onClick={() => {
+        if (!dataInicio || !dataFim) {
+          alert("Informe o período para gerar o relatório.");
+          return;
+        }
+        baixarRelatorioEntradasPeriodo(dataInicio, dataFim);
+      }}
+    >
+      Imprimir PDF
+    </button>
+
+    <button
+      className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+      onClick={() => setMostrarModal(true)}
+    >
+      Nova Entrada
+    </button>
+  </div>
+</div>
 
         {/* Modal */}
         {mostrarModal && (
@@ -118,9 +152,9 @@ const EntradasPage = () => {
                         <td className="px-4 py-2 border-b text-right font-semibold">
                           {valorTotal
                             ? valorTotal.toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                              })
+                              style: "currency",
+                              currency: "BRL",
+                            })
                             : "R$ 0,00"}
                         </td>
                         <td className="px-4 py-2 border-b text-center">
