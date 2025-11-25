@@ -1,4 +1,3 @@
-// src/controllers/usuarioController.js
 const { Usuario } = require("../models");
 const bcrypt = require("bcryptjs");
 
@@ -39,7 +38,6 @@ const usuarioController = {
           .json({ error: "Já existe um usuário cadastrado com este e-mail." });
       }
 
-      // perfil padrão "user" se nada for enviado
       const perfilFinal = perfil || "user";
 
       const senhaHash = await bcrypt.hash(senha, 10);
@@ -136,8 +134,7 @@ const usuarioController = {
     }
   },
 
-  // PUT /api/usuarios/:id/decks
-  // body: { decks: ["produtos", "fornecedores", ...] }
+
   async definirDecks(req, res) {
     try {
       const { id } = req.params;

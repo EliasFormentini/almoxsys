@@ -48,7 +48,6 @@ const UsuarioModal = ({
     const emailTrim = (email || "").trim();
 
     if (!nomeTrim || !emailTrim) {
-      // validação básica; deixa mensagem pro onSave / useAlert
       return onSave({
         __validationError: "Informe nome e e-mail.",
       });
@@ -59,7 +58,7 @@ const UsuarioModal = ({
       nome: nomeTrim,
       email: emailTrim,
       perfil,
-      sena: undefined, // só pra lembrar, não vamos enviar se vazio
+      senha: undefined, 
       deckIds: deckIdsSelecionados,
     };
 

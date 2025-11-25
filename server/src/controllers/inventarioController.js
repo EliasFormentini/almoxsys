@@ -1,7 +1,6 @@
 const { Inventario, InventarioProduto, Produto } = require("../models");
 
 const inventarioController = {
-    // Lista inventários (cabeçalhos)
     async list(req, res) {
         try {
             const { aberto } = req.query;
@@ -111,7 +110,6 @@ const inventarioController = {
                 });
             }
 
-            // cria itens + ajusta estoque
             for (const item of itens) {
                 const id_produto = Number(item.id_produto);
                 const qtd = Number(item.qtd_correta);
@@ -129,14 +127,12 @@ const inventarioController = {
                     });
                 }
 
-                // registra a contagem
                 await InventarioProduto.create({
                     id_inventario: inventario.id,
                     id_produto,
                     qtd_correta: qtd,
                 });
 
-                // ajusta estoque para o valor contado
                 produto.estoque_atual = qtd;
                 await produto.save();
             }

@@ -1,4 +1,3 @@
-// src/pages/PedidosPage.jsx
 import React, { useEffect, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import {
@@ -52,7 +51,7 @@ const PedidosPage = () => {
     };
 
     const handleEditarPedido = (pedido, e) => {
-        e.stopPropagation(); // não disparar o expand
+        e.stopPropagation();
         setPedidoEditando(pedido);
         setMostrarModal(true);
     };
@@ -138,7 +137,6 @@ const PedidosPage = () => {
     return (
         <>
             <div className="p-6 bg-gray-50 min-h-screen">
-                {/* Cabeçalho */}
                 <div className="flex justify-between items-center mb-6 border-b pb-2">
                     <h1 className="text-2xl font-semibold text-gray-800">
                         Pedidos de Compra
@@ -154,7 +152,6 @@ const PedidosPage = () => {
                     </div>
                 </div>
 
-                {/* Modal de criação/edição */}
                 {mostrarModal && (
                     <PedidoModal
                         isOpen={mostrarModal}
@@ -162,7 +159,6 @@ const PedidosPage = () => {
                             setMostrarModal(false);
                             setPedidoEditando(null);
                         }}
-                        // você pode adaptar o PedidoModal para aceitar isso e preencher campos na edição
                         pedidoInicial={pedidoEditando}
                         onSave={async (dadosPedido) => {
                             try {
@@ -186,7 +182,6 @@ const PedidosPage = () => {
                                         message: "O pedido foi registrado com sucesso!",
                                     });
 
-                                    // Gera o PDF automaticamente após criar
                                     try {
                                         await baixarRelatorioPedido(pedidoCriado.id);
                                     } catch (errPdf) {
@@ -220,7 +215,6 @@ const PedidosPage = () => {
                     />
                 )}
 
-                {/* Tabela */}
                 <div className="overflow-x-auto bg-white rounded-lg shadow">
                     <table className="min-w-full border border-gray-200">
                         <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -251,7 +245,6 @@ const PedidosPage = () => {
 
                                     return (
                                         <React.Fragment key={pedido.id}>
-                                            {/* Linha principal - clicável para expandir itens */}
                                             <tr
                                                 className="hover:bg-gray-50 transition-colors cursor-pointer"
                                                 onClick={() => toggleExpand(pedido.id)}
@@ -278,7 +271,6 @@ const PedidosPage = () => {
                                                 </td>
                                                 <td className="px-4 py-2 border-b text-center">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        {/* Expand/colapsar ícone */}
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -294,7 +286,6 @@ const PedidosPage = () => {
                                                             )}
                                                         </button>
 
-                                                        {/* Editar (apenas pendente) */}
                                                         {isPendente && (
                                                             <button
                                                                 onClick={(e) =>
@@ -306,7 +297,6 @@ const PedidosPage = () => {
                                                             </button>
                                                         )}
 
-                                                        {/* Excluir (apenas pendente) */}
                                                         {isPendente && (
                                                             <button
                                                                 onClick={(e) =>
@@ -318,20 +308,23 @@ const PedidosPage = () => {
                                                             </button>
                                                         )}
 
-                                                        {/* Atender */}
                                                         <button
                                                             onClick={(e) => handleAtenderPedido(pedido, e)}
-                                                            className="text-sm px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                                                            disabled={!isPendente}
+                                                            className={`text-sm px-2 py-1 rounded text-white flex items-center justify-center gap-1 ${isPendente
+                                                                    ? "bg-green-600 hover:bg-green-700"
+                                                                    : "bg-gray-400 cursor-not-allowed opacity-60"
+                                                                }`}
+                                                            title={isPendente ? "Atender pedido" : "Pedido já atendido"}
                                                         >
-                                                            <FileCheck size={16}/>
+                                                            <FileCheck size={16} />
                                                         </button>
 
-                                                        {/* PDF */}
                                                         <button
                                                             onClick={(e) => handleBaixarPdf(pedido, e)}
                                                             className="text-sm px-2 py-1 rounded border border-blue-700 text-blue-700 hover:bg-blue-50"
                                                         >
-                                                           <Printer size={16} />
+                                                            <Printer size={16} />
                                                         </button>
                                                     </div>
                                                 </td>

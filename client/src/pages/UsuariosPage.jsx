@@ -11,7 +11,6 @@ import { Pencil, Trash2, ArrowUpDown } from "lucide-react";
 import { FaLockOpen } from "react-icons/fa";
 import { useAlert } from "../hooks/useAlert";
 
-// ---- Decks fixos em código ----
 const DECKS_FIXOS = [
   { code: "PRODUTOS", label: "Produtos (Categorias / Unidades / Produtos)" },
   { code: "FORNECEDORES", label: "Fornecedores" },
@@ -19,19 +18,16 @@ const DECKS_FIXOS = [
   { code: "RELATORIOS", label: "Relatórios" },
 ];
 
-// helper para garantir que sempre temos um array
 const getPermissoesArray = (permissoes) => {
   if (!permissoes) return [];
 
   if (Array.isArray(permissoes)) return permissoes;
 
   if (typeof permissoes === "string") {
-    // tenta JSON
     try {
       const parsed = JSON.parse(permissoes);
       if (Array.isArray(parsed)) return parsed;
     } catch {
-      // tenta lista separada por vírgula
       return permissoes
         .split(",")
         .map((p) => p.trim())
@@ -60,7 +56,6 @@ const UsuariosPage = () => {
 
   const { alert, confirm, AlertComponent } = useAlert();
 
-  // ---- CARREGAR USUÁRIOS (sem useCallback, sem deps de alert) ----
   const carregar = async () => {
     try {
       setLoading(true);
@@ -80,7 +75,6 @@ const UsuariosPage = () => {
 
   useEffect(() => {
     carregar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNovo = () => {

@@ -14,6 +14,7 @@ import {
   FaArrowUp,
   FaClipboardList,
   FaHandHoldingUsd,
+  FaHome,
 } from "react-icons/fa";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -23,7 +24,6 @@ const Sidebar = ({ isOpen }) => {
 
   const { usuario } = useAuth();
 
-  // ---- helper pra garantir array de permissões ----
   const getPermissoesArray = () => {
     if (!usuario) return [];
 
@@ -33,12 +33,10 @@ const Sidebar = ({ isOpen }) => {
     if (Array.isArray(raw)) return raw;
 
     if (typeof raw === "string") {
-      // tenta JSON primeiro
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) return parsed;
       } catch (e) {
-        // não era JSON, tenta lista separada por vírgula
         return raw
           .split(",")
           .map((p) => p.trim())
@@ -58,7 +56,7 @@ const Sidebar = ({ isOpen }) => {
   const canFornecedores = isAdmin || permissoes.includes("FORNECEDORES");
   const canMovimentacoes = isAdmin || permissoes.includes("MOVIMENTACOES");
   const canPedidos = isAdmin || permissoes.includes("PEDIDOS");
-  const canUsuarios = isAdmin; // só admin vê Usuários
+  const canUsuarios = isAdmin;
 
   const linkBaseClass =
     "flex items-center p-2 rounded hover:bg-gray-800 transition-colors";
@@ -74,9 +72,18 @@ const Sidebar = ({ isOpen }) => {
       </div>
 
       <nav className="p-4 space-y-2">
-        {/* Produtos com submenu (proteção por deck PRODUTOS ou admin) */}
         {canProdutos && (
           <div>
+
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `${linkBaseClass} ${isActive ? activeClass : ""}`
+              }
+            >
+              <FaHome className="mr-2" /> Dashboard
+            </NavLink>
             <button
               onClick={() => setOpenProdutos(!openProdutos)}
               className="flex items-center w-full text-left hover:bg-gray-800 p-2 rounded"
@@ -126,7 +133,6 @@ const Sidebar = ({ isOpen }) => {
           </div>
         )}
 
-        {/* Fornecedores (deck FORNECEDORES ou admin) */}
         {canFornecedores && (
           <NavLink
             to="/fornecedores"
@@ -138,7 +144,6 @@ const Sidebar = ({ isOpen }) => {
           </NavLink>
         )}
 
-        {/* Movimentações com submenu (deck MOVIMENTACOES ou admin) */}
         {canMovimentacoes && (
           <div>
             <button
@@ -190,7 +195,6 @@ const Sidebar = ({ isOpen }) => {
           </div>
         )}
 
-        {/* Relatórios (futuro) */}
         {canPedidos && (
           <NavLink
             to="/pedidos"
@@ -198,11 +202,10 @@ const Sidebar = ({ isOpen }) => {
               `${linkBaseClass} ${isActive ? activeClass : ""}`
             }
           >
-            <FaHandHoldingUsd  className="mr-2" /> Pedidos
+            <FaHandHoldingUsd className="mr-2" /> Pedidos
           </NavLink>
         )}
 
-        {/* Usuários (somente admin) */}
         {canUsuarios && (
           <NavLink
             to="/usuarios"

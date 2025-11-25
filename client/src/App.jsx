@@ -12,7 +12,7 @@ import InventarioPage from "./pages/InventarioPage";
 import InventarioDetalhePage from "./pages/InventarioDetalhePage";
 import UsuariosPage from "./pages/UsuariosPage";
 import PedidosPage from "./pages/PedidosPage";
-
+import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
@@ -27,7 +27,6 @@ export default function App() {
             {/* Rota pública */}
             <Route path="/login" element={<LoginPage />} />
 
-            {/* Rotas protegidas (dentro do layout principal) */}
             <Route
               path="/"
               element={
@@ -37,7 +36,8 @@ export default function App() {
               }
             >
               {/* Página inicial dentro do layout */}
-              <Route index element={<EntradasPage />} />
+              <Route index element={<DashboardPage />} />
+              <Route path="dashboard" element={<DashboardPage />} />
 
               <Route path="categorias" element={<CategoriasPage />} />
               <Route path="unidades" element={<UnidadesPage />} />
@@ -48,7 +48,7 @@ export default function App() {
               <Route path="inventario" element={<InventarioPage />} />
               <Route path="inventario/:id" element={<InventarioDetalhePage />} />
               <Route path="usuarios" element={<UsuariosPage />} />
-              <Route path="/pedidos" element={<PedidosPage />} />
+              <Route path="pedidos" element={<PedidosPage />} />
             </Route>
           </Routes>
         </Router>

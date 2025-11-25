@@ -1,9 +1,7 @@
-// src/controllers/relatorioController.js
 const PDFDocument = require("pdfkit");
 const { Op } = require("sequelize");
 const { Produto, Categoria, Unidade, Movimentacao, Fornecedor, Usuario } = require("../models");
 
-// helper para formatar datas no PDF
 const formatDate = (d) => {
   if (!d) return "";
   return new Date(d).toLocaleDateString("pt-BR");

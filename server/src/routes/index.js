@@ -12,6 +12,7 @@ const inventarioRoutes = require("./inventarioRoutes");
 const deckPermissaoRoutes = require("./deckPermissaoRoutes");
 const relatorioRoutes = require("./relatorioRoutes"); 
 const pedidoRoutes = require("./pedidoRoutes"); 
+const dashboardRoutes = require("./dashboardRoutes");
 
 // ROTAS DE AUTENTICAÇÃO
 router.use("/auth", authRoutes);
@@ -27,5 +28,6 @@ router.use("/usuarios", usuarioRoutes);
 router.use("/decks-permissao", deckPermissaoRoutes);
 router.use("/relatorios", relatorioRoutes);
 router.use("/pedidos", pedidoRoutes); 
+router.use("/dashboard", dashboardRoutes);
 
 module.exports = router;

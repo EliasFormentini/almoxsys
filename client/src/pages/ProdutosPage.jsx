@@ -190,7 +190,6 @@ const ProdutosPage = () => {
     return arr;
   }, [filtrados, sortConfig]);
 
-  // ---------- RENDER ----------
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Cabeçalho */}
@@ -352,7 +351,6 @@ const ProdutosPage = () => {
   );
 };
 
-// Cabeçalho com botão de ordenação
 const Th = ({ label, onSort, active }) => (
   <th className="px-4 py-3 border-b text-left">
     <button

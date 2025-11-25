@@ -1,7 +1,6 @@
 const { Produto, Categoria, Unidade } = require("../models");
 
 const produtoController = {
-  // Listar todos os produtos
   async list(req, res) {
     try {
       const produtos = await Produto.findAll({
@@ -17,7 +16,6 @@ const produtoController = {
     }
   },
 
-  // Buscar produto por ID
   async getById(req, res) {
     try {
       const { id } = req.params;
@@ -36,7 +34,6 @@ const produtoController = {
     }
   },
 
-  // Criar novo produto
   async create(req, res) {
     try {
       const { nome, id_categoria, id_unidade, estoque_atual, estoque_minimo } = req.body;
@@ -54,7 +51,6 @@ const produtoController = {
     }
   },
 
-  // Atualizar produto
   async update(req, res) {
     try {
       const { id } = req.params;
@@ -71,7 +67,6 @@ const produtoController = {
     }
   },
 
-  // Deletar produto
   async delete(req, res) {
     try {
       const { id } = req.params;

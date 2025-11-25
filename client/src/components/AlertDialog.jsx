@@ -31,7 +31,7 @@ const typeConfig = {
 
 const AlertDialog = ({
   isOpen,
-  type = "info",              // "success" | "error" | "warning" | "info"
+  type = "info",           
   title = "Aviso",
   message,
   showCancel = false,

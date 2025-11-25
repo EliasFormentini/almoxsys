@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 
@@ -9,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(true);
 
-  // Carrega usuário/token salvos ao iniciar a app
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("usuario");
@@ -47,7 +45,6 @@ export const AuthProvider = ({ children }) => {
         error.response?.data?.message ||
         "Falha ao fazer login. Verifique e-mail e senha.";
 
-      // re-lança para a LoginPage tratar (mostrar alerta/toast)
       throw new Error(msg);
     }
   };

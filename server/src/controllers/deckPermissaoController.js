@@ -1,8 +1,6 @@
-// src/controllers/deckPermissaoController.js
 const { DeckPermissao } = require("../models");
 
 const deckPermissaoController = {
-  // GET /api/decks-permissao
   async list(req, res) {
     try {
       const decks = await DeckPermissao.findAll({
@@ -17,7 +15,6 @@ const deckPermissaoController = {
     }
   },
 
-  // POST /api/decks-permissao
   async create(req, res) {
     try {
       const { nome, descricao, permissoes } = req.body;
@@ -29,7 +26,7 @@ const deckPermissaoController = {
       const novo = await DeckPermissao.create({
         nome,
         descricao: descricao || null,
-        permissoes: permissoes || null, // se for JSON/texto
+        permissoes: permissoes || null, 
       });
 
       return res.status(201).json(novo);
@@ -41,7 +38,6 @@ const deckPermissaoController = {
     }
   },
 
-  // PUT /api/decks-permissao/:id
   async update(req, res) {
     try {
       const { id } = req.params;
@@ -67,7 +63,6 @@ const deckPermissaoController = {
     }
   },
 
-  // DELETE /api/decks-permissao/:id
   async remove(req, res) {
     try {
       const { id } = req.params;

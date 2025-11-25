@@ -1,34 +1,86 @@
-// src/components/PedidoModal.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import SelecionarProdutoModal from "./SelecionarProdutoModal";
+import { useAlert } from "../hooks/useAlert";
 
-const PedidoModal = ({ isOpen, onClose, onSave }) => {
+const PedidoModal = ({ isOpen, onClose, onSave, pedidoInicial }) => {
   const [tipo, setTipo] = useState("compra");
   const [observacao, setObservacao] = useState("");
   const [itens, setItens] = useState([]);
   const [mostrarSelecaoProduto, setMostrarSelecaoProduto] = useState(false);
 
+  const { alert, AlertComponent } = useAlert();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (pedidoInicial) {
+      setTipo(pedidoInicial.tipo || "compra");
+      setObservacao(pedidoInicial.observacao || "");
+
+      const itensOrigem =
+        pedidoInicial.itens || pedidoInicial.ItemPedidos || [];
+
+      const itensConvertidos = itensOrigem.map((item) => {
+        const produto =
+          item.produto || item.Produto || item.ProdutoPedido || null;
+
+        const quantidade = Number(item.quantidade || 0);
+
+        const valorUnit =
+          Number(
+            item.valor_unitario ??
+              item.valorUnitario ??
+              item.valor_unit ??
+              0
+          ) || 0;
+
+        const valorTotal =
+          Number(
+            item.valor_total ??
+              item.valorTotal ??
+              quantidade * valorUnit
+          ) || 0;
+
+        return {
+          id_produto:
+            item.id_produto ||
+            item.produto_id ||
+            produto?.id,
+          produto,
+          quantidade,
+          valor_unitario: valorUnit,
+          valor_total: valorTotal,
+        };
+      });
+
+      setItens(itensConvertidos);
+    } else {
+      setTipo("compra");
+      setObservacao("");
+      setItens([]);
+    }
+  }, [isOpen, pedidoInicial]);
+
   if (!isOpen) return null;
 
   const adicionarProduto = (produto) => {
-    // Impede duplicado: se já existir, só aumenta a quantidade
     const jaExiste = itens.find((i) => i.id_produto === produto.id);
 
     if (jaExiste) {
       const atualizados = itens.map((i) =>
         i.id_produto === produto.id
           ? {
-            ...i,
-            quantidade: i.quantidade + 1,
-            valor_total: (i.quantidade + 1) * i.valor_unitario,
-          }
+              ...i,
+              quantidade: i.quantidade + 1,
+              valor_total: (i.quantidade + 1) * i.valor_unitario,
+            }
           : i
       );
       setItens(atualizados);
     } else {
       const novoItem = {
         id_produto: produto.id,
-        produto, // objeto completo, usado só no front
+        produto,
         quantidade: 1,
         valor_unitario: 0,
         valor_total: 0,
@@ -48,7 +100,8 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
       if (isNaN(novoValor) || novoValor < 0) novoValor = 0;
       novosItens[index].quantidade = novoValor;
     } else if (campo === "valor_unitario") {
-      novoValor = parseFloat(valor.replace(",", ".") || "0");
+      const texto = (valor || "").toString();
+      novoValor = parseFloat(texto.replace(",", ".") || "0");
       if (isNaN(novoValor) || novoValor < 0) novoValor = 0;
       novosItens[index].valor_unitario = novoValor;
     }
@@ -67,14 +120,17 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
   };
 
   const valorTotalPedido = useMemo(
-    () =>
-      itens.reduce((acc, item) => acc + Number(item.valor_total || 0), 0),
+    () => itens.reduce((acc, item) => acc + Number(item.valor_total || 0), 0),
     [itens]
   );
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (itens.length === 0) {
-      alert("Adicione pelo menos um produto ao pedido.");
+      await alert({
+        title: "Itens obrigatórios",
+        message: "Adicione pelo menos um produto ao pedido.",
+        type: "warning",
+      });
       return;
     }
 
@@ -97,7 +153,9 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
         <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Cabeçalho */}
           <div className="flex justify-between items-center bg-blue-600 text-white px-4 py-3 rounded-t-lg">
-            <h2 className="text-lg font-semibold">Novo Pedido de Compra</h2>
+            <h2 className="text-lg font-semibold">
+              {pedidoInicial ? "Editar Pedido de Compra" : "Novo Pedido de Compra"}
+            </h2>
             <button onClick={onClose} className="text-xl hover:text-gray-200">
               ✕
             </button>
@@ -105,7 +163,7 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
 
           {/* Conteúdo */}
           <div className="p-4 flex-1 overflow-y-auto space-y-4">
-            {/* Dados do pedido */}
+            {/* Dados gerais */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -163,7 +221,7 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
                   <tbody>
                     {itens.length > 0 ? (
                       itens.map((item, index) => (
-                        <tr key={item.id_produto} className="hover:bg-gray-50">
+                        <tr key={`${item.id_produto}-${index}`} className="hover:bg-gray-50">
                           <td className="border p-2">
                             {item.produto?.nome || `ID ${item.id_produto}`}
                           </td>
@@ -184,8 +242,11 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
                             <input
                               type="text"
                               value={
-                                item.valor_unitario?.toString().replace(".", ",") ||
-                                "0,00"
+                                item.valor_unitario !== undefined
+                                  ? item.valor_unitario
+                                      .toString()
+                                      .replace(".", ",")
+                                  : "0,00"
                               }
                               onChange={(e) =>
                                 atualizarItem(
@@ -265,7 +326,6 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
         </div>
       </div>
 
-      {/* Modal de seleção de produtos */}
       {mostrarSelecaoProduto && (
         <SelecionarProdutoModal
           isOpen={mostrarSelecaoProduto}
@@ -273,6 +333,8 @@ const PedidoModal = ({ isOpen, onClose, onSave }) => {
           onSelect={adicionarProduto}
         />
       )}
+
+      {AlertComponent}
     </>
   );
 };

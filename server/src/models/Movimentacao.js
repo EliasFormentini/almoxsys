@@ -21,7 +21,6 @@ module.exports = (sequelize) => {
     timestamps: false,
   });
 
-  // Hook para calcular valor_total automaticamente
   Movimentacao.beforeCreate((mov) => {
     if (mov.quantidade && mov.valor_unitario) {
       mov.valor_total = mov.quantidade * mov.valor_unitario;

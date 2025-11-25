@@ -80,14 +80,12 @@ const SelecionarFornecedorModal = ({ isOpen, onSelect, onClose }) => {
             />
           </div>
 
-          {/* Container com rolagem e sombras dinâmicas */}
           <div className="relative flex-1">
             {/* Fade top */}
             {scrollTop > 0 && (
               <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-gray-200/80 to-transparent pointer-events-none z-10" />
             )}
 
-            {/* Conteúdo rolável */}
             <div
               ref={scrollRef}
               onScroll={handleScroll}

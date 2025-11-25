@@ -1,4 +1,3 @@
-// src/routes/relatorioRoutes.js
 const express = require("express");
 const router = express.Router();
 
@@ -6,26 +5,19 @@ const relatorioController = require("../controllers/relatorioController");
 const authMiddleware = require("../middlewares/authMiddleware");
 const permission = require("../middlewares/permissionMiddleware");
 
-// 🔹 imports necessários para o relatório de pedido
 const PDFDocument = require("pdfkit");
 const { Pedido, ItemPedido, Produto, Usuario } = require("../models");
 
-// precisa estar logado
 router.use(authMiddleware);
-// precisa ter deck RELATORIOS (ou ser admin, dependendo do middleware)
 router.use(permission("RELATORIOS"));
 
-// GET /api/relatorios/estoque-atual
 router.get("/estoque-atual", relatorioController.estoqueAtual);
 
-// GET /api/relatorios/entradas-periodo?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
 router.get("/entradas-periodo", relatorioController.entradasPeriodo);
 
-// GET /api/relatorios/saidas-periodo?dataInicio=YYYY-MM-DD&dataFim=YYYY-MM-DD
-// (se no controller o nome for saidasPeriodo, ajuste aqui também)
+
 router.get("/saidas-periodo", relatorioController.saiasPeriodo);
 
-// GET /api/relatorios/pedido/:id
 router.get("/pedido/:id", async (req, res) => {
   try {
     const { id } = req.params;

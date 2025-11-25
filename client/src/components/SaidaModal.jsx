@@ -9,7 +9,6 @@ import { useToast } from "../contexts/ToastContext";
 const SaidaModal = ({ isOpen, onClose, onSave }) => {
   const [abaAtiva, setAbaAtiva] = useState("dados");
 
-  // Saída não usa nota/série. Deixei data e observação.
   const [dados, setDados] = useState({
     data_movimentacao: new Date().toISOString().split("T")[0],
     observacao: "",
@@ -18,7 +17,6 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
   const [produtos, setProdutos] = useState([]);
   const [mostrarSelecaoProduto, setMostrarSelecaoProduto] = useState(false);
 
-  // sub-modal para informar a quantidade (valor = custo_medio fixo)
   const [produtoParaAdicionar, setProdutoParaAdicionar] = useState(null);
   const [mostrarAdicionarProduto, setMostrarAdicionarProduto] = useState(false);
 
@@ -28,15 +26,12 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
   const handleChange = (e) =>
     setDados({ ...dados, [e.target.name]: e.target.value });
 
-  // chamado ao escolher um produto na modal de seleção
   const handleSelectProduto = (produto) => {
-    // esperamos que venha com custo_medio do backend
     setProdutoParaAdicionar(produto);
     setMostrarAdicionarProduto(true);
     setMostrarSelecaoProduto(false);
   };
 
-  // confirma (com quantidade) e adiciona à grade
   const confirmarAdicionarProduto = (itemComQtdECustos) => {
     setProdutos((lst) => [...lst, itemComQtdECustos]);
     setProdutoParaAdicionar(null);
@@ -96,7 +91,6 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
           tipo: "saida",
           id_produto,
           quantidade,
-          // backend calcula com custo_medio, esse campo é ignorado se vier
           valor_unitario: item.valor_unitario,
           observacao: dados.observacao || null,
           data_movimentacao: dados.data_movimentacao,
@@ -261,7 +255,6 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
             )}
           </div>
 
-          {/* Rodapé */}
           <div className="flex justify-end gap-2 p-4 border-t">
             <button
               onClick={onClose}
@@ -278,18 +271,16 @@ const SaidaModal = ({ isOpen, onClose, onSave }) => {
           </div>
         </div>
 
-        {/* Modal: selecionar produto */}
         <SelecionarProdutoModal
           isOpen={mostrarSelecaoProduto}
           onClose={() => setMostrarSelecaoProduto(false)}
           onSelect={handleSelectProduto}
         />
 
-        {/* Modal: informar quantidade (valor = custo_medio travado) */}
         <AdicionarProdutoModal
           isOpen={mostrarAdicionarProduto}
           produto={produtoParaAdicionar}
-          modo="saida" // << trava o valor_unitário = custo_medio
+          modo="saida" 
           onConfirm={confirmarAdicionarProduto}
           onClose={() => {
             setMostrarAdicionarProduto(false);

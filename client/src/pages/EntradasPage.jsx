@@ -14,7 +14,7 @@ const EntradasPage = () => {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
-  const { alert, confirm, AlertComponent } = useAlert();
+  const { alert, AlertComponent } = useAlert();
   const { showToast } = useToast();
 
   const carregarEntradas = async () => {
@@ -40,51 +40,66 @@ const EntradasPage = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const handleImprimirPdf = async () => {
+    if (!dataInicio || !dataFim) {
+      await alert({
+        title: "Período inválido",
+        message: "Informe o período (data inicial e final) para gerar o relatório.",
+        type: "warning",
+      });
+      return;
+    }
+
+    try {
+      await baixarRelatorioEntradasPeriodo(dataInicio, dataFim);
+    } catch (err) {
+      console.error("Erro ao gerar PDF de entradas:", err);
+      await alert({
+        title: "Erro no relatório",
+        message: "Não foi possível gerar o PDF de entradas para o período informado.",
+        type: "error",
+      });
+    }
+  };
+
   return (
     <>
       <div className="p-6 bg-gray-50 min-h-screen">
         {/* Cabeçalho */}
-       <div className="flex justify-between items-center mb-6 border-b pb-2">
-  <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
+        <div className="flex justify-between items-center mb-6 border-b pb-2">
+          <h1 className="text-2xl font-semibold text-gray-800">Entradas</h1>
 
-  <div className="flex items-center gap-2">
-    <input
-      type="date"
-      value={dataInicio}
-      onChange={(e) => setDataInicio(e.target.value)}
-      className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-    />
-    <span className="text-gray-600 text-sm">até</span>
-    <input
-      type="date"
-      value={dataFim}
-      onChange={(e) => setDataFim(e.target.value)}
-      className="border border-gray-300 rounded-md px-2 py-1 text-sm"
-    />
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+            />
+            <span className="text-gray-600 text-sm">até</span>
+            <input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm"
+            />
 
-    <button
-      className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium shadow-sm"
-      onClick={() => {
-        if (!dataInicio || !dataFim) {
-          alert("Informe o período para gerar o relatório.");
-          return;
-        }
-        baixarRelatorioEntradasPeriodo(dataInicio, dataFim);
-      }}
-    >
-      Imprimir PDF
-    </button>
+            <button
+              className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+              onClick={handleImprimirPdf}
+            >
+              Imprimir PDF
+            </button>
 
-    <button
-      className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
-      onClick={() => setMostrarModal(true)}
-    >
-      Nova Entrada
-    </button>
-  </div>
-</div>
+            <button
+              className="bg-blue-800 hover:bg-blue-900 text-white px-4 py-2 rounded-md font-medium shadow-sm"
+              onClick={() => setMostrarModal(true)}
+            >
+              Nova Entrada
+            </button>
+          </div>
+        </div>
 
-        {/* Modal */}
         {mostrarModal && (
           <EntradaModal
             isOpen={mostrarModal}
@@ -116,7 +131,6 @@ const EntradasPage = () => {
           />
         )}
 
-        {/* Tabela */}
         <div className="overflow-x-auto bg-white rounded-lg shadow">
           <table className="min-w-full border border-gray-200">
             <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -141,20 +155,26 @@ const EntradasPage = () => {
                   return (
                     <React.Fragment key={entrada.id}>
                       <tr className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-2 border-b">{entrada.numero_nota}</td>
-                        <td className="px-4 py-2 border-b">{entrada.serie_nota}</td>
+                        <td className="px-4 py-2 border-b">
+                          {entrada.numero_nota}
+                        </td>
+                        <td className="px-4 py-2 border-b">
+                          {entrada.serie_nota}
+                        </td>
                         <td className="px-4 py-2 border-b">
                           {entrada.fornecedor?.nome || "—"}
                         </td>
                         <td className="px-4 py-2 border-b">
-                          {new Date(entrada.data_movimentacao).toLocaleDateString("pt-BR")}
+                          {new Date(
+                            entrada.data_movimentacao
+                          ).toLocaleDateString("pt-BR")}
                         </td>
                         <td className="px-4 py-2 border-b text-right font-semibold">
                           {valorTotal
                             ? valorTotal.toLocaleString("pt-BR", {
-                              style: "currency",
-                              currency: "BRL",
-                            })
+                                style: "currency",
+                                currency: "BRL",
+                              })
                             : "R$ 0,00"}
                         </td>
                         <td className="px-4 py-2 border-b text-center">
@@ -179,7 +199,9 @@ const EntradasPage = () => {
                                 <tr>
                                   <th className="px-4 py-2 text-left">Produto</th>
                                   <th className="px-4 py-2 text-center">Qtd</th>
-                                  <th className="px-4 py-2 text-right">Vlr Unit</th>
+                                  <th className="px-4 py-2 text-right">
+                                    Vlr Unit
+                                  </th>
                                   <th className="px-4 py-2 text-right">Total</th>
                                 </tr>
                               </thead>
@@ -195,13 +217,17 @@ const EntradasPage = () => {
                                         {item.quantidade}
                                       </td>
                                       <td className="px-4 py-2 border-b text-right">
-                                        {Number(item.valor_unitario || 0).toLocaleString("pt-BR", {
+                                        {Number(
+                                          item.valor_unitario || 0
+                                        ).toLocaleString("pt-BR", {
                                           style: "currency",
                                           currency: "BRL",
                                         })}
                                       </td>
                                       <td className="px-4 py-2 border-b text-right text-blue-700 font-medium">
-                                        {Number(item.valor_total || 0).toLocaleString("pt-BR", {
+                                        {Number(
+                                          item.valor_total || 0
+                                        ).toLocaleString("pt-BR", {
                                           style: "currency",
                                           currency: "BRL",
                                         })}

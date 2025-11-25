@@ -38,7 +38,7 @@ const pedidoController = {
 
   async create(req, res) {
     try {
-      const { tipo, items } = req.body; 
+      const { tipo, items } = req.body;
 
       if (!req.user || !req.user.id) {
         return res.status(401).json({ error: "Usuário não autenticado." });
@@ -115,6 +115,92 @@ const pedidoController = {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Erro ao criar pedido" });
+    }
+  },
+
+  async update(req, res) {
+    try {
+      const { id } = req.params;
+      const { tipo, observacao, items } = req.body; // front envia "items"
+
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "É necessário informar ao menos um item no pedido." });
+      }
+
+      const pedido = await Pedido.findByPk(id);
+
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+
+      // prepara itens (mesma lógica do create)
+      const itensPreparados = items.map((item) => {
+        const quantidade = Number(item.quantidade || 0);
+        const valor_unitario = Number(
+          (item.valor_unitario ?? 0).toString().replace(",", ".")
+        );
+        const valor_total = quantidade * valor_unitario;
+
+        return {
+          id_produto: item.id_produto,
+          quantidade,
+          valor_unitario,
+          valor_total,
+        };
+      });
+
+      const valor_total_pedido = itensPreparados.reduce(
+        (acc, item) => acc + item.valor_total,
+        0
+      );
+
+      // atualiza cabeçalho do pedido
+      await pedido.update({
+        tipo: tipo || pedido.tipo,
+        observacao: observacao ?? pedido.observacao,
+        valor_total: valor_total_pedido,
+      });
+
+      // remove itens antigos
+      await ItemPedido.destroy({ where: { id_pedido: id } });
+
+      // recria itens
+      for (const item of itensPreparados) {
+        await ItemPedido.create({
+          id_pedido: pedido.id,
+          id_produto: item.id_produto,
+          quantidade: item.quantidade,
+          valor_unitario: item.valor_unitario,
+          valor_total: item.valor_total,
+        });
+      }
+
+      const pedidoAtualizado = await Pedido.findByPk(pedido.id, {
+        include: [
+          {
+            model: Usuario,
+            as: "usuario",
+            attributes: ["id", "nome", "email", "perfil"],
+          },
+          {
+            model: ItemPedido,
+            as: "itens",
+            include: [
+              {
+                model: Produto,
+                as: "produto",
+              },
+            ],
+          },
+        ],
+      });
+
+      return res.json(pedidoAtualizado);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Erro ao atualizar pedido" });
     }
   },
 
@@ -200,6 +286,35 @@ const pedidoController = {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Erro ao buscar pedido" });
+    }
+  },
+  async remove(req, res) {
+    try {
+      const { id } = req.params;
+
+      const pedido = await Pedido.findByPk(id, {
+        include: [
+          {
+            model: ItemPedido,
+            as: "itens",
+          },
+        ],
+      });
+
+      if (!pedido) {
+        return res.status(404).json({ error: "Pedido não encontrado." });
+      }
+
+      await ItemPedido.destroy({ where: { id_pedido: id } });
+
+      await pedido.destroy();
+
+      return res.status(200).json({ message: "Pedido excluído com sucesso." });
+    } catch (err) {
+      console.error("Erro ao excluir pedido:", err);
+      return res
+        .status(500)
+        .json({ error: "Erro ao excluir pedido." });
     }
   },
 };

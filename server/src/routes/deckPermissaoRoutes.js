@@ -1,4 +1,3 @@
-// src/routes/deckPermissaoRoutes.js
 const express = require("express");
 const deckPermissaoController = require("../controllers/deckPermissaoController");
 

@@ -2,7 +2,6 @@ const { Movimentacao, Produto, Fornecedor, Usuario } = require("../models");
 const { Sequelize } = require("sequelize");
 
 const movimentacaoController = {
-  // LISTAR (entradas agrupadas / saídas individuais)
   async list(req, res) {
     try {
       const { tipo } = req.query;
@@ -19,7 +18,6 @@ const movimentacaoController = {
         order: [["data_movimentacao", "DESC"]],
       });
 
-      // Entradas agrupadas
       if (tipo === "entrada") {
         const agrupadas = Object.values(
           movimentacoes.reduce((acc, mov) => {
@@ -45,7 +43,6 @@ const movimentacaoController = {
           }, {})
         );
 
-          // Saídas agrupadas (por data + observação)
       if (tipo === "saida") {
         const agrupadas = Object.values(
           movimentacoes.reduce((acc, mov) => {
@@ -56,7 +53,7 @@ const movimentacaoController = {
 
             if (!acc[chave]) {
               acc[chave] = {
-                id: mov.id, // apenas para key no front
+                id: mov.id, 
                 data_movimentacao: mov.data_movimentacao,
                 observacao: mov.observacao,
                 itens: [],
@@ -81,7 +78,6 @@ const movimentacaoController = {
         return res.json(agrupadas);
       }
 
-      // Saídas → sem agrupamento
       return res.json(movimentacoes);
     } catch (err) {
       console.error(err);
@@ -89,7 +85,6 @@ const movimentacaoController = {
     }
   },
 
-  // CRIAR MOVIMENTAÇÃO (entrada ou saída)
   async create(req, res) {
     try {
       const {
@@ -113,14 +108,12 @@ const movimentacaoController = {
       let valorTotal = 0;
 
       if (tipo === "entrada") {
-        // === ENTRADA ===
         const qtd = Number(quantidade);
         const vu = Number(valor_unitario);
 
         const estoqueAnterior = Number(produto.estoque_atual || 0);
         const custoAnterior = Number(produto.custo_medio || 0);
 
-        // custo médio ponderado
         const novoEstoque = estoqueAnterior + qtd;
         const novoCustoMedio =
           novoEstoque > 0
@@ -134,7 +127,6 @@ const movimentacaoController = {
         valorUnitario = vu;
         valorTotal = qtd * vu;
       } else if (tipo === "saida") {
-        // === SAÍDA ===
         const qtd = Number(quantidade);
         const custoMedio = Number(produto.custo_medio || 0);
 
@@ -172,7 +164,6 @@ const movimentacaoController = {
     }
   },
 
-  // CRIAR ENTRADA (com vários produtos)
   async createEntrada(req, res) {
     try {
       const { numero_nota, serie_nota, id_fornecedor, observacao, produtos = [] } = req.body;
